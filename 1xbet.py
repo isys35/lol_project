@@ -6,12 +6,10 @@ import time
 # with open('xbet.html', 'w', encoding='utf8') as html_file:
 #     html_file.write(r.text)
 
-
-
 class XBetParser:
     def __init__(self):
         self.url = 'https://1xstavka.ru/live/Basketball/'
-        self.delay = 0.5
+        self.delay = 0.15
         self.main_headers = {
             'Accept-Language': 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
             'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:73.0) Gecko/20100101 Firefox/73.0'
@@ -19,13 +17,15 @@ class XBetParser:
 
     def get_response(self, url, headers):
         time.sleep(self.delay)
-        r = requests.get(url, headers=headers)
-        if r.status_code == 200:
-            return r
+        while True:
+            print('connect...')
+            r = requests.get(url, headers=headers)
+            if r.status_code == 200:
+                return r
 
     def get_champs(self):
         response = self.get_response(self.url, self.main_headers)
-        soup = BS(response.content , 'lxml')
+        soup = BS(response.content, 'lxml')
         champs = soup.select('.c-events__liga')
         champs_string = []
         for champ in champs:
@@ -60,7 +60,10 @@ class XBetParser:
                 scores_1 = 0
                 scores_2 = 0
             id = self.get_id(href)
-            value = self.get_value(id, href)
+            values_main_time_json = self.get_value(id, href)
+            values_main_time = self.selected_values(values_main_time_json)
+
+            print(command1, command2)
             event_info['href'] = href
             event_info['champ'] = champ
             event_info['command1'] = command1
@@ -72,6 +75,39 @@ class XBetParser:
             event_info['time'] = time_event
             events_info.append(event_info)
 
+    def selected_values(self, json_object):
+        if json_object['Value']['GE']:
+            value = {}
+            for el in json_object['Value']['GE']:
+                if el['G'] == 38:
+                    p1_ot = el['E'][0][0]['C']
+                    p2_ot = el['E'][1][0]['C']
+                if el['G'] == 939:
+                    p1_mt = el['E'][0][0]['C']
+                    x_mt = el['E'][1][0]['C']
+                    p2_mt = el['E'][2][0]['C']
+                if el['G'] == 4:
+                    t_ot_m = [{'coef': t['C'], 'points':t['P']} for t in el['E'][0]]
+                    t_ot_s = [{'coef': t['C'], 'points':t['P']} for t in el['E'][1]]
+                    value['total_total'] = {'more': t_ot_m, 'smaller': t_ot_s}
+                    #print(t_ot_m, t_ot_s)
+                if el['G'] == 5:
+                    t_it_m_1 = [{'coef': t['C'], 'points':t['P']} for t in el['E'][0]]
+                    t_it_s_1 = [{'coef': t['C'], 'points':t['P']} for t in el['E'][1]]
+                    value['individ_total_1'] = {'more':t_it_m_1, 'smaller': t_it_s_1}
+                if el['G'] == 6:
+                    t_it_m_2 = [{'coef': t['C'], 'points': t['P']} for t in el['E'][0]]
+                    t_it_s_2 = [{'coef': t['C'], 'points': t['P']} for t in el['E'][1]]
+                    value['individ_total_2'] = {'more': t_it_m_2, 'smaller': t_it_s_2}
+                if el['G'] == 22:
+                    t_f_ot_yes = el['E'][0][0]['C']
+                    t_f_ot_no = el['E'][1][0]['C']
+            value['id_quarter'] = json_object['Value']['SG'][-1]['I']
+        else:
+            # ставок нету
+            value = []
+        return value
+
     def get_id(self, url):
         return url.split('/')[-2].split('-')[0]
 
@@ -80,7 +116,7 @@ class XBetParser:
         headers = self.main_headers
         headers['Referer'] = 'https://1xstavka.ru/'+url
         response = self.get_response(url_koef, headers)
-        print(response.json())
+        return response.json()
 
 
 xbet_parser = XBetParser()
