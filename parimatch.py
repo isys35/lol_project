@@ -2,37 +2,30 @@ import requests
 from requests import Session
 from bs4 import BeautifulSoup as BS
 import time
-
+from selenium import webdriver
+from selenium.webdriver.firefox.options import Options
 
 class ParimatchParser:
     def __init__(self):
-        self.url = 'https://www.parimatch.ru/'
-        self.delay = 0.5
-        self.session = Session()
-        self.session.get(self.url)
-        self.headers = {
-            'Host': 'www.parimatch.ru',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:73.0) Gecko/20100101 Firefox/73.0',
-            'Accept': 'application/json',
-            'Accept-Language': 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Connection': 'keep-alive',
-            'Referer': 'https://www.parimatch.ru/event/championship/21263466',
-            'TE': 'Trailers'
-        }
+        self.url = 'https://www.parimatch.ru/live'
+        self.vis_browser = False
+        self.browser = None
 
+    def open_browser(self):
+        options = Options()
+        options.headless = self.vis_browser
+        self.browser = webdriver.Firefox(options=options)
 
-    def get_response(self, url, headers):
-        time.sleep(self.delay)
-        while True:
-            print('connect...')
-            r = self.session.get(url, headers=headers)
-            if r.status_code == 200:
-                print(r.encoding)
-                return r
-
+    def get_page(self):
+        if not self.browser:
+            self.open_browser()
+        self.browser.get(self.url)
+        time.sleep(30)
+        content = self.browser.page_source
+        soup = BS(content, 'lxml')
+        with open('parimatch.html', 'w', encoding='utf8') as html_file:
+            html_file.write(str(soup))
+        self.browser.quit()
 
 parser = ParimatchParser()
-resp = parser.get_response('https://www.parimatch.ru/event/championship/21263466', parser.headers)
-with open('pari', 'wb') as html_file:
-     html_file.write(resp.content)
+parser.get_page()

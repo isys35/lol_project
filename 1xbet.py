@@ -9,7 +9,7 @@ import time
 class XBetParser:
     def __init__(self):
         self.url = 'https://1xstavka.ru/live/Basketball/'
-        self.delay = 0.15
+        self.delay = 0
         self.main_headers = {
             'Accept-Language': 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
             'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:73.0) Gecko/20100101 Firefox/73.0'
@@ -59,11 +59,14 @@ class XBetParser:
                 time_event = '00:00'
                 scores_1 = 0
                 scores_2 = 0
-            id = self.get_id(href)
-            values_main_time_json = self.get_value(id, href)
+            id, split_href = self.get_id(href)
+            values_main_time_json = self.get_value(id, split_href)
             values_main_time = self.selected_values(values_main_time_json)
-
-            print(command1, command2)
+            if 'id_quarter' in values_main_time:
+                values_qurter_json = self.get_value(values_main_time['id_quarter'], split_href)
+                values_qurter = self.selected_values(values_qurter_json)
+            else:
+                values_qurter = {}
             event_info['href'] = href
             event_info['champ'] = champ
             event_info['command1'] = command1
@@ -73,7 +76,10 @@ class XBetParser:
             event_info['scores_1'] = scores_1
             event_info['scores_2'] = scores_2
             event_info['time'] = time_event
+            event_info['values_total'] = values_main_time
+            event_info['values_quarter'] = values_qurter
             events_info.append(event_info)
+        return events_info
 
     def selected_values(self, json_object):
         if json_object['Value']['GE']:
@@ -102,22 +108,25 @@ class XBetParser:
                 if el['G'] == 22:
                     t_f_ot_yes = el['E'][0][0]['C']
                     t_f_ot_no = el['E'][1][0]['C']
-            value['id_quarter'] = json_object['Value']['SG'][-1]['I']
+            if 'SG' in json_object['Value']:
+                value['id_quarter'] = str(json_object['Value']['SG'][-1]['I'])
+                value['name_quarter'] = json_object['Value']['SG'][-1]['PN']
         else:
             # ставок нету
             value = []
         return value
 
     def get_id(self, url):
-        return url.split('/')[-2].split('-')[0]
+        return url.split('/')[-2].split('-')[0], url.split('/')[-2].replace(url.split('/')[-2].split('-')[0], '')+'/'
 
     def get_value(self, id, url):
         url_koef = f'https://1xstavka.ru/LiveFeed/GetGameZip?id={id}&lng=ru&cfview=0&isSubGames=true&GroupEvents=true&allEventsGroupSubGames=true&countevents=250&partner=51&grMode=2'
         headers = self.main_headers
-        headers['Referer'] = 'https://1xstavka.ru/'+url
+        headers['Referer'] = 'https://1xstavka.ru/' + id + url
         response = self.get_response(url_koef, headers)
         return response.json()
 
 
 xbet_parser = XBetParser()
-xbet_parser.get_champs()
+while True:
+    print(xbet_parser.get_champs())
