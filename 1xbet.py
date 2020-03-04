@@ -110,7 +110,8 @@ class XBetParser:
                     t_f_ot_no = el['E'][1][0]['C']
             if 'SG' in json_object['Value']:
                 value['id_quarter'] = str(json_object['Value']['SG'][-1]['I'])
-                value['name_quarter'] = json_object['Value']['SG'][-1]['PN']
+                if 'PN' in json_object['Value']['SG'][-1]:
+                    value['name_quarter'] = json_object['Value']['SG'][-1]['PN']
         else:
             # ставок нету
             value = []
@@ -129,4 +130,6 @@ class XBetParser:
 
 xbet_parser = XBetParser()
 while True:
-    print(xbet_parser.get_champs())
+    champs_info = xbet_parser.get_champs()
+    for champ in champs_info:
+        print(champ['command1'], champ['total_score1'], champ['command2'], champ['total_score2'])
