@@ -3,6 +3,7 @@ import time
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import NoSuchElementException
 
 class ParimatchParser:
     def __init__(self):
@@ -21,7 +22,14 @@ class ParimatchParser:
     def get_main_page(self):
         if not self.browser:
             self.open_browser()
-        self.browser.get(self.url)
+        if len(self.browser.window_handles) == 1:
+            self.browser.get(self.url)
+        else:
+            current_urls = self.get_current_urls()
+            if self.url in current_urls:
+                while self.browser.current_url != self.url:
+                    for page in self.browser.window_handles:
+                        self.browser.switch_to.window(page)
         content = self.browser.page_source
         soup = BS(content, 'lxml')
         while not soup.select('main-markets'):
@@ -53,7 +61,13 @@ class ParimatchParser:
             self.get_main_page()
         if not self.games_found:
             return []
-        content = self.browser.page_source
+        if self.browser.current_url == self.url:
+            content = self.browser.page_source
+        else:
+            while self.browser.current_url == self.url:
+                for page in self.browser.window_handles:
+                    self.browser.switch_to.window(page)
+            content = self.browser.page_source
         soup = BS(content, 'lxml')
         with open('parimatch.html', 'w', encoding='utf8') as html_file:
             html_file.write(str(soup))
@@ -96,20 +110,30 @@ class ParimatchParser:
                 events_info.append(event_info)
         return events_info
 
+    def get_current_urls(self):
+        if self.browser:
+            current_urls = []
+            for page in self.browser.window_handles:
+                self.browser.switch_to.window(page)
+                current_urls.append(self.browser.current_url)
+            return current_urls
+
     def get_value(self, href):
         url = 'https://www.parimatch.ru' + href
-        if not self.browser:
-            self.open_browser()
-        current_urls = []
-        for page in self.browser.window_handles:
-            self.browser.switch_to.window(page)
-            current_urls.append(current_urls)
-            if self.browser.current_url == self.url:
-                continue
-            elif self.browser.current_url == url:
-                break
-
         self.browser.execute_script(f'window.open("{url}", "new window")')
+        self.browser.switch_to.window(self.browser.window_handles[-1])
+        while True:
+            try:
+                element = self.browser.find_element_by_css_selector('.event-outcome__value')
+                if element.get:
+                    break
+            except NoSuchElementException:
+                pass
+        content = self.browser.page_source
+        soup = BS(content, 'lxml')
+        with open('parimatch_match.html', 'w', encoding='utf8') as html_file:
+            html_file.write(str(soup))
+
 parser = ParimatchParser()
 parser.open_browser()
-parser.get_value("/event/basketball-philippines-mpbl-phl/21384575")
+parser.get_value("/event/B%7CLTU%7CPT2931:2830420522/21388070")
