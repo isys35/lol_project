@@ -10,6 +10,8 @@ class ParimatchParser:
         self.vis_browser = True
         self.browser = None
         self.main_page_load = False
+        self.games_found = False
+        self.start_work_time = 0
 
     def open_browser(self):
         options = Options()
@@ -19,16 +21,18 @@ class ParimatchParser:
     def get_main_page(self):
         if not self.browser:
             self.open_browser()
-        if self.browser.current_url != self.url:
-            self.browser.get(self.url)
+        self.browser.get(self.url)
         content = self.browser.page_source
         soup = BS(content, 'lxml')
         while not soup.select('main-markets'):
-            print('.')
             time.sleep(0.1)
             content = self.browser.page_source
             soup = BS(content, 'lxml')
+        if not soup.select('.live-group-item.sportcolor-bg-B'):
+            self.games_found = False
+            return
         element = self.browser.find_element_by_css_selector('.live-group-item.sportcolor-bg-B')
+        self.games_found = True
         self.browser.execute_script("arguments[0].scrollIntoView();", element)
         while True:
             live_blocks = element.find_elements_by_css_selector('.live-block-column.live-block-column_data')
@@ -37,15 +41,18 @@ class ParimatchParser:
                 if live_block.get_attribute("href") == 'https://www.parimatch.ru/null':
                     self.browser.execute_script("arguments[0].scrollIntoView();", live_block)
                     hrefs.append('https://www.parimatch.ru/null')
-                print(live_block.get_attribute("href"))
             if not 'https://www.parimatch.ru/null' in hrefs:
+                self.start_work_time = time.time()
                 self.main_page_load = True
                 break
 
     def get_events(self):
         if not self.main_page_load:
             self.get_main_page()
-        print('connect...')
+        if time.time() - self.start_work_time > 180:
+            self.get_main_page()
+        if not self.games_found:
+            return []
         content = self.browser.page_source
         soup = BS(content, 'lxml')
         with open('parimatch.html', 'w', encoding='utf8') as html_file:
@@ -80,11 +87,14 @@ class ParimatchParser:
                     'champ': champ_title,
                     'command1': command1,
                     'command2': command2,
-                    'total_score1': total_score1,
-                    'total_score2': total_score2,
+                    'total_score1': int(total_score1),
+                    'total_score2': int(total_score2),
                     'scores_1': scores1,
                     'scores_2': scores2,
                     'time': time_match,
                 }
                 events_info.append(event_info)
         return events_info
+
+    def get_value(self,href):
+        pass

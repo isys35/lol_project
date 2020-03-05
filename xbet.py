@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup as BS
 import time
+from requests.exceptions import ConnectionError
 
 
 # with open('xbet.html', 'w', encoding='utf8') as html_file:
@@ -9,7 +10,7 @@ import time
 class XBetParser:
     def __init__(self):
         self.url = 'https://1xstavka.ru/live/Basketball/'
-        self.delay = 0
+        self.delay = 0.15
         self.main_headers = {
             'Accept-Language': 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
             'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:73.0) Gecko/20100101 Firefox/73.0'
@@ -19,7 +20,13 @@ class XBetParser:
         time.sleep(self.delay)
         while True:
             print('connect...')
-            r = requests.get(url, headers=headers)
+            r = None
+            while not r:
+                try:
+                    r = requests.get(url, headers=headers)
+                except ConnectionError:
+                    print('[WARNING] Проблема с соединением')
+                    time.sleep(1)
             if r.status_code == 200:
                 return r
 
@@ -35,7 +42,9 @@ class XBetParser:
         for i in range(0, len(events)):
             event_info = {}
             href = events[i].select('.c-events__name')[0]['href']
+            #print(href)
             if i != 0:
+                #print(i)
                 if events_info[i-1]['href'].split('/')[-3] == href.split('/')[-3]:
                     champ = events_info[i-1]['champ']
                 else:
@@ -49,6 +58,8 @@ class XBetParser:
             if total_score:
                 total_score1 = total_score[0].text
                 total_score2 = total_score[1].text
+                if not events[i].select('.c-events__time')[0].select('span'):
+                    continue
                 time_event = events[i].select('.c-events__time')[0].select('span')[0].text
                 scores = events[i].select('.c-events-scoreboard__cell')
                 scores_1 = [int(el.text) for el in scores[1:int(len(scores) / 2)]]
@@ -116,3 +127,4 @@ class XBetParser:
         else:
             values_qurter = {}
         return values_main_time, values_qurter
+
