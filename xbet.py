@@ -23,7 +23,7 @@ class XBetParser:
             if r.status_code == 200:
                 return r
 
-    def get_champs(self):
+    def get_events(self):
         response = self.get_response(self.url, self.main_headers)
         soup = BS(response.content, 'lxml')
         champs = soup.select('.c-events__liga')
@@ -59,14 +59,6 @@ class XBetParser:
                 time_event = '00:00'
                 scores_1 = 0
                 scores_2 = 0
-            id, split_href = self.get_id(href)
-            values_main_time_json = self.get_value(id, split_href)
-            values_main_time = self.selected_values(values_main_time_json)
-            if 'id_quarter' in values_main_time:
-                values_qurter_json = self.get_value(values_main_time['id_quarter'], split_href)
-                values_qurter = self.selected_values(values_qurter_json)
-            else:
-                values_qurter = {}
             event_info['href'] = href
             event_info['champ'] = champ
             event_info['command1'] = command1
@@ -76,8 +68,6 @@ class XBetParser:
             event_info['scores_1'] = scores_1
             event_info['scores_2'] = scores_2
             event_info['time'] = time_event
-            event_info['values_total'] = values_main_time
-            event_info['values_quarter'] = values_qurter
             events_info.append(event_info)
         return events_info
 
@@ -85,18 +75,10 @@ class XBetParser:
         if json_object['Value']['GE']:
             value = {}
             for el in json_object['Value']['GE']:
-                if el['G'] == 38:
-                    p1_ot = el['E'][0][0]['C']
-                    p2_ot = el['E'][1][0]['C']
-                if el['G'] == 939:
-                    p1_mt = el['E'][0][0]['C']
-                    x_mt = el['E'][1][0]['C']
-                    p2_mt = el['E'][2][0]['C']
                 if el['G'] == 4:
                     t_ot_m = [{'coef': t['C'], 'points':t['P']} for t in el['E'][0]]
                     t_ot_s = [{'coef': t['C'], 'points':t['P']} for t in el['E'][1]]
                     value['total_total'] = {'more': t_ot_m, 'smaller': t_ot_s}
-                    #print(t_ot_m, t_ot_s)
                 if el['G'] == 5:
                     t_it_m_1 = [{'coef': t['C'], 'points':t['P']} for t in el['E'][0]]
                     t_it_s_1 = [{'coef': t['C'], 'points':t['P']} for t in el['E'][1]]
@@ -105,9 +87,6 @@ class XBetParser:
                     t_it_m_2 = [{'coef': t['C'], 'points': t['P']} for t in el['E'][0]]
                     t_it_s_2 = [{'coef': t['C'], 'points': t['P']} for t in el['E'][1]]
                     value['individ_total_2'] = {'more': t_it_m_2, 'smaller': t_it_s_2}
-                if el['G'] == 22:
-                    t_f_ot_yes = el['E'][0][0]['C']
-                    t_f_ot_no = el['E'][1][0]['C']
             if 'SG' in json_object['Value']:
                 value['id_quarter'] = str(json_object['Value']['SG'][-1]['I'])
                 if 'PN' in json_object['Value']['SG'][-1]:
@@ -120,16 +99,20 @@ class XBetParser:
     def get_id(self, url):
         return url.split('/')[-2].split('-')[0], url.split('/')[-2].replace(url.split('/')[-2].split('-')[0], '')+'/'
 
-    def get_value(self, id, url):
+    def get_value_json(self, id, url):
         url_koef = f'https://1xstavka.ru/LiveFeed/GetGameZip?id={id}&lng=ru&cfview=0&isSubGames=true&GroupEvents=true&allEventsGroupSubGames=true&countevents=250&partner=51&grMode=2'
         headers = self.main_headers
         headers['Referer'] = 'https://1xstavka.ru/' + id + url
         response = self.get_response(url_koef, headers)
         return response.json()
 
-
-xbet_parser = XBetParser()
-while True:
-    champs_info = xbet_parser.get_champs()
-    for champ in champs_info:
-        print(champ['command1'], champ['total_score1'], champ['command2'], champ['total_score2'])
+    def get_value(self, href):
+        id, split_href = self.get_id(href)
+        values_main_time_json = self.get_value_json(id, split_href)
+        values_main_time = self.selected_values(values_main_time_json)
+        if 'id_quarter' in values_main_time:
+            values_qurter_json = self.get_value_json(values_main_time['id_quarter'], split_href)
+            values_qurter = self.selected_values(values_qurter_json)
+        else:
+            values_qurter = {}
+        return values_main_time, values_qurter

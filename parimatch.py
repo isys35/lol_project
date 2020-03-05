@@ -1,16 +1,13 @@
-import requests
-from requests import Session
 from bs4 import BeautifulSoup as BS
 import time
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
-#from selenium.webdriver.common.action_chains import ActionChains
 
 
 class ParimatchParser:
     def __init__(self):
         self.url = 'https://www.parimatch.ru/live'
-        self.vis_browser = False
+        self.vis_browser = True
         self.browser = None
         self.main_page_load = False
 
@@ -33,8 +30,6 @@ class ParimatchParser:
             soup = BS(content, 'lxml')
         element = self.browser.find_element_by_css_selector('.live-group-item.sportcolor-bg-B')
         self.browser.execute_script("arguments[0].scrollIntoView();", element)
-        #actions = ActionChains(self.browser)
-        #actions.move_to_element(element).perform()
         while True:
             live_blocks = element.find_elements_by_css_selector('.live-block-column.live-block-column_data')
             hrefs = []
@@ -46,8 +41,6 @@ class ParimatchParser:
             if not 'https://www.parimatch.ru/null' in hrefs:
                 self.main_page_load = True
                 break
-                #actions = ActionChains(self.browser)
-                #actions.move_to_element(live_block).perform()
 
     def get_events(self):
         if not self.main_page_load:
@@ -95,24 +88,3 @@ class ParimatchParser:
                 }
                 events_info.append(event_info)
         return events_info
-
-
-
-
-
-        # heads = [el.text.lower() for el in soup.select('.live-block-head-title__text')]
-        # if 'баскетбол' in heads:
-        #     baskets = []
-        #     print('[DEBUG]')
-        #     for live_block in soup.select('.live-block-column.live-block-column_data'):
-        #         if live_block['href'].split('/')[2].split('|')[0] == 'B':
-        #             baskets.append(live_block)
-        #     for basket in baskets:
-        #         print(basket)
-        #         print(basket.select('.championship-name-title__text'))
-        # else:
-        #     print('[INFO] Игры не найдены')
-
-parser = ParimatchParser()
-while True:
-    print(parser.get_events())
