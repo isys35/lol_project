@@ -2,12 +2,12 @@ from bs4 import BeautifulSoup as BS
 import time
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
-
+from selenium.webdriver.common.keys import Keys
 
 class ParimatchParser:
     def __init__(self):
         self.url = 'https://www.parimatch.ru/live'
-        self.vis_browser = True
+        self.vis_browser = False
         self.browser = None
         self.main_page_load = False
         self.games_found = False
@@ -96,5 +96,20 @@ class ParimatchParser:
                 events_info.append(event_info)
         return events_info
 
-    def get_value(self,href):
-        pass
+    def get_value(self, href):
+        url = 'https://www.parimatch.ru' + href
+        if not self.browser:
+            self.open_browser()
+        current_urls = []
+        for page in self.browser.window_handles:
+            self.browser.switch_to.window(page)
+            current_urls.append(current_urls)
+            if self.browser.current_url == self.url:
+                continue
+            elif self.browser.current_url == url:
+                break
+
+        self.browser.execute_script(f'window.open("{url}", "new window")')
+parser = ParimatchParser()
+parser.open_browser()
+parser.get_value("/event/basketball-philippines-mpbl-phl/21384575")
