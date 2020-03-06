@@ -151,7 +151,6 @@ class ParimatchParser:
         t_it_s_2 = []
         command1 = soup.select('.scoreboard__name')[0].text
         command2 = soup.select('.scoreboard__name')[1].text
-        print(command1, command2)
         for event in event_markets:
             if event.select('.event-market__title')[0].text.replace(' ','') == 'Тотал':
                 total_all = event.select('.event-outcome-group')
