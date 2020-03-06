@@ -120,11 +120,12 @@ class ParimatchParser:
             self.browser_match.get(url)
         else:
             current_urls = self.get_current_urls(self.browser_match)
+            print(current_urls)
             if self.browser_match.current_url != url:
                 if url in current_urls:
                     for page in self.browser_match.window_handles:
                         self.browser_match.switch_to.window(page)
-                        if self.browser_match.current_url != url:
+                        if self.browser_match.current_url == url:
                             break
                 else:
                     self.count += 4123
@@ -132,7 +133,6 @@ class ParimatchParser:
                     self.browser_match.switch_to.window(self.browser_match.window_handles[-1])
         while True:
             try:
-                print('..............')
                 elements = self.browser_match.find_elements_by_css_selector('.event-outcome__value')
                 if elements:
                     if not False in [False for el in elements if not el.text]:
@@ -151,6 +151,7 @@ class ParimatchParser:
         t_it_s_2 = []
         command1 = soup.select('.scoreboard__name')[0].text
         command2 = soup.select('.scoreboard__name')[1].text
+        print(command1, command2)
         for event in event_markets:
             if event.select('.event-market__title')[0].text.replace(' ','') == 'Тотал':
                 total_all = event.select('.event-outcome-group')
@@ -183,3 +184,8 @@ class ParimatchParser:
         value_main['individ_total_1'] = {'more': t_it_m_1, 'smaller': t_it_s_1}
         value_main['individ_total_2'] = {'more': t_it_m_2, 'smaller': t_it_s_2}
         return value_main
+
+# parser = ParimatchParser()
+# while True:
+#     print(parser.get_value('/event/B%7CTUR%7CPT3984:3407592912/21401625'))
+#     print(parser.get_value('/event/basketball-philippines-mpbl-phl/21399859'))
