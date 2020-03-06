@@ -14,6 +14,7 @@ class ParimatchParser:
         self.games_found = False
         self.start_work_time = 0
         self.browser_match = None
+        self.count = 0
 
     def open_browser(self):
         options = Options()
@@ -122,13 +123,16 @@ class ParimatchParser:
             if self.browser_match.current_url != url:
                 if url in current_urls:
                     for page in self.browser_match.window_handles:
-                        while self.browser_match.current_url != url:
-                            self.browser_match.switch_to.window(page)
+                        self.browser_match.switch_to.window(page)
+                        if self.browser_match.current_url != url:
+                            break
                 else:
-                    self.browser_match.execute_script(f'window.open("{url}", "new window")')
+                    self.count += 4123
+                    self.browser_match.execute_script(f'window.open("{url}", "{self.count}")')
                     self.browser_match.switch_to.window(self.browser_match.window_handles[-1])
         while True:
             try:
+                print('..............')
                 elements = self.browser_match.find_elements_by_css_selector('.event-outcome__value')
                 if elements:
                     if not False in [False for el in elements if not el.text]:

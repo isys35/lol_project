@@ -10,13 +10,23 @@ class Parsing(Thread):
         self.website_object = website_object
         self.name = name
         self.events = []
+        self.action = True
 
     def parsing(self):
         self.events = self.website_object.get_events()
 
+    def pause(self):
+        self.action = False
+
+    def play(self):
+        self.action = True
+
     def run(self):
         while True:
-            self.parsing()
+            if self.action:
+                self.parsing()
+            else:
+                time.sleep(.1)
 
 
 def transform_name(events, key):
@@ -48,6 +58,8 @@ while True:
     events_xbet = xbet_th.events
     events_parimatch = parimatch_th.events
     if events_xbet and events_parimatch:
+        xbet_th.pause()
+        parimatch_th.pause()
         command1_transform_xbet = transform_name(events_xbet, 'command1')
         command1_transform_parimatch = transform_name(events_parimatch, 'command1')
         matches = []
@@ -73,6 +85,9 @@ while True:
             print('********Parimatch***********')
             print(match[1])
             total_value, set_value = xbet_parser.get_value(match[0]['href'])
+            if not total_value:
+                print('[INFO] Событие завершено')
+                continue
             print(f'Коэф-ты для {matches.index(match) + 1} -го совпадения')
             print('********1xbet*************')
             print('Общие')
@@ -83,3 +98,7 @@ while True:
             print('********Parimatch*************')
             print('Общие')
             print(total_value2)
+        xbet_th.events = []
+        xbet_th.play()
+        parimatch_th.events = []
+        parimatch_th.play()

@@ -24,7 +24,8 @@ class XBetParser:
             while not r:
                 try:
                     r = requests.get(url, headers=headers)
-                except ConnectionError:
+                except ConnectionError as ex:
+                    print(ex)
                     print('[WARNING] Проблема с соединением')
                     time.sleep(1)
             if r.status_code == 200:
