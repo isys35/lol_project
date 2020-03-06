@@ -42,9 +42,9 @@ class XBetParser:
         for i in range(0, len(events)):
             event_info = {}
             href = events[i].select('.c-events__name')[0]['href']
-            #print(href)
+            print(href)
+            print(len(events_info))
             if i != 0:
-                #print(i)
                 if events_info[i-1]['href'].split('/')[-3] == href.split('/')[-3]:
                     champ = events_info[i-1]['champ']
                 else:
@@ -104,7 +104,7 @@ class XBetParser:
                     value['name_quarter'] = json_object['Value']['SG'][-1]['PN']
         else:
             # ставок нету
-            value = []
+            value = {}
         return value
 
     def get_id(self, url):

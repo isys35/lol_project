@@ -79,3 +79,7 @@ while True:
             print(total_value)
             print('По четверти')
             print(set_value)
+            total_value2 = parimatch_parser.get_value(match[0]['href'])
+            print('********Parimatch*************')
+            print('Общие')
+            print(total_value2)

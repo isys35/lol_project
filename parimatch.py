@@ -13,23 +13,23 @@ class ParimatchParser:
         self.main_page_load = False
         self.games_found = False
         self.start_work_time = 0
+        self.browser_match = None
 
     def open_browser(self):
         options = Options()
         options.headless = self.vis_browser
         self.browser = webdriver.Firefox(options=options)
 
+    def open_browser_match(self):
+        options = Options()
+        options.headless = self.vis_browser
+        self.browser_match = webdriver.Firefox(options=options)
+
+
     def get_main_page(self):
         if not self.browser:
             self.open_browser()
-        if len(self.browser.window_handles) == 1:
-            self.browser.get(self.url)
-        else:
-            current_urls = self.get_current_urls()
-            if self.url in current_urls:
-                while self.browser.current_url != self.url:
-                    for page in self.browser.window_handles:
-                        self.browser.switch_to.window(page)
+        self.browser.get(self.url)
         content = self.browser.page_source
         soup = BS(content, 'lxml')
         while not soup.select('main-markets'):
@@ -61,13 +61,7 @@ class ParimatchParser:
             self.get_main_page()
         if not self.games_found:
             return []
-        if self.browser.current_url == self.url:
-            content = self.browser.page_source
-        else:
-            while self.browser.current_url == self.url:
-                for page in self.browser.window_handles:
-                    self.browser.switch_to.window(page)
-            content = self.browser.page_source
+        content = self.browser.page_source
         soup = BS(content, 'lxml')
         with open('parimatch.html', 'w', encoding='utf8') as html_file:
             html_file.write(str(soup))
@@ -110,30 +104,79 @@ class ParimatchParser:
                 events_info.append(event_info)
         return events_info
 
-    def get_current_urls(self):
-        if self.browser:
+    def get_current_urls(self, browser):
+        if browser:
             current_urls = []
-            for page in self.browser.window_handles:
-                self.browser.switch_to.window(page)
-                current_urls.append(self.browser.current_url)
+            for page in browser.window_handles:
+                browser.switch_to.window(page)
+                current_urls.append(browser.current_url)
             return current_urls
 
     def get_value(self, href):
         url = 'https://www.parimatch.ru' + href
-        self.browser.execute_script(f'window.open("{url}", "new window")')
-        self.browser.switch_to.window(self.browser.window_handles[-1])
+        print(url)
+        if not self.browser_match:
+            self.open_browser_match()
+            self.browser_match.get(url)
+        else:
+            current_urls = self.get_current_urls(self.browser_match)
+            if self.browser_match.current_url != url:
+                if url in current_urls:
+                    for page in self.browser_match.window_handles:
+                        while self.browser_match.current_url != url:
+                            self.browser_match.switch_to.window(page)
+                else:
+                    self.browser_match.execute_script(f'window.open("{url}", "new window")')
+                    self.browser_match.switch_to.window(self.browser_match.window_handles[-1])
         while True:
             try:
-                element = self.browser.find_element_by_css_selector('.event-outcome__value')
-                if element.get:
-                    break
+                elements = self.browser_match.find_elements_by_css_selector('.event-outcome__value')
+                if elements:
+                    if not False in [False for el in elements if not el.text]:
+                        break
             except NoSuchElementException:
                 pass
-        content = self.browser.page_source
+        content = self.browser_match.page_source
         soup = BS(content, 'lxml')
-        with open('parimatch_match.html', 'w', encoding='utf8') as html_file:
-            html_file.write(str(soup))
-
-parser = ParimatchParser()
-parser.open_browser()
-parser.get_value("/event/B%7CLTU%7CPT2931:2830420522/21388070")
+        event_markets = soup.select('.event-market')
+        value_main = {}
+        t_ot_m = []
+        t_ot_s = []
+        t_it_m_1 = []
+        t_it_s_1 = []
+        t_it_m_2 = []
+        t_it_s_2 = []
+        command1 = soup.select('.scoreboard__name')[0].text
+        command2 = soup.select('.scoreboard__name')[1].text
+        for event in event_markets:
+            if event.select('.event-market__title')[0].text.replace(' ','') == 'Тотал':
+                total_all = event.select('.event-outcome-group')
+                for total in total_all:
+                    _t_ot_m = {'points': total.select('.event-outcome-group-head')[0].text,
+                               'coef': total.select('.event-outcome__value')[0].text}
+                    _t_ot_s = {'points': total.select('.event-outcome-group-head')[0].text,
+                               'coef': total.select('.event-outcome__value')[1].text}
+                    t_ot_m.append(_t_ot_m)
+                    t_ot_s.append(_t_ot_s)
+            if event.select(".event-market__title")[0].text.replace(' ', '') == f'Индивидуальныйтотал{command1}'.replace(' ', ''):
+                total_all = event.select('.event-outcome-group')
+                for total in total_all:
+                    _t_it_m_1 = {'points': total.select('.event-outcome-group-head')[0].text,
+                               'coef': total.select('.event-outcome__value')[0].text}
+                    _t_it_s_1 = {'points': total.select('.event-outcome-group-head')[0].text,
+                               'coef': total.select('.event-outcome__value')[1].text}
+                    t_it_m_1.append(_t_it_m_1)
+                    t_it_s_1.append(_t_it_s_1)
+            if event.select(".event-market__title")[0].text.replace(' ', '') == f'Индивидуальныйтотал{command2}'.replace(' ', ''):
+                total_all = event.select('.event-outcome-group')
+                for total in total_all:
+                    _t_it_m_2 = {'points': total.select('.event-outcome-group-head')[0].text,
+                               'coef': total.select('.event-outcome__value')[0].text}
+                    _t_it_s_2 = {'points': total.select('.event-outcome-group-head')[0].text,
+                               'coef': total.select('.event-outcome__value')[1].text}
+                    t_it_m_2.append(_t_it_m_2)
+                    t_it_s_2.append(_t_it_s_2)
+        value_main['total_total'] = {'more': t_ot_m, 'smaller': t_ot_s}
+        value_main['individ_total_1'] = {'more': t_it_m_1, 'smaller': t_it_s_1}
+        value_main['individ_total_2'] = {'more': t_it_m_2, 'smaller': t_it_s_2}
+        return value_main
