@@ -42,8 +42,8 @@ class XBetParser:
         for i in range(0, len(events)):
             event_info = {}
             href = events[i].select('.c-events__name')[0]['href']
-            print(href)
-            print(len(events_info))
+            #print(href)
+            #print(len(events_info))
             if i != 0:
                 if events_info[i-1]['href'].split('/')[-3] == href.split('/')[-3]:
                     champ = events_info[i-1]['champ']

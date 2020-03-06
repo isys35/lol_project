@@ -25,7 +25,6 @@ class ParimatchParser:
         options.headless = self.vis_browser
         self.browser_match = webdriver.Firefox(options=options)
 
-
     def get_main_page(self):
         if not self.browser:
             self.open_browser()
