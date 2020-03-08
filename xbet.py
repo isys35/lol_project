@@ -19,7 +19,7 @@ class XBetParser:
     def get_response(self, url, headers):
         time.sleep(self.delay)
         while True:
-            print('connect...')
+            print('Запрос к 1xbet')
             r = None
             while not r:
                 try:
@@ -129,3 +129,9 @@ class XBetParser:
             values_qurter = {}
         return values_main_time, values_qurter
 
+
+if __name__ == "__main__":
+    parser = XBetParser()
+    parser.get_events()
+    while True:
+        print(parser.get_events())

@@ -5,10 +5,11 @@ from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import NoSuchElementException
 
+
 class ParimatchParser:
     def __init__(self):
         self.url = 'https://www.parimatch.ru/live'
-        self.vis_browser = False
+        self.vis_browser = True
         self.browser = None
         self.main_page_load = False
         self.games_found = False
@@ -112,33 +113,7 @@ class ParimatchParser:
                 current_urls.append(browser.current_url)
             return current_urls
 
-    def get_value(self, href):
-        url = 'https://www.parimatch.ru' + href
-        print(url)
-        if not self.browser_match:
-            self.open_browser_match()
-            self.browser_match.get(url)
-        else:
-            current_urls = self.get_current_urls(self.browser_match)
-            print(current_urls)
-            if self.browser_match.current_url != url:
-                if url in current_urls:
-                    for page in self.browser_match.window_handles:
-                        self.browser_match.switch_to.window(page)
-                        if self.browser_match.current_url == url:
-                            break
-                else:
-                    self.count += 4123
-                    self.browser_match.execute_script(f'window.open("{url}", "{self.count}")')
-                    self.browser_match.switch_to.window(self.browser_match.window_handles[-1])
-        while True:
-            try:
-                elements = self.browser_match.find_elements_by_css_selector('.event-outcome__value')
-                if elements:
-                    if not False in [False for el in elements if not el.text]:
-                        break
-            except NoSuchElementException:
-                pass
+    def value(self):
         content = self.browser_match.page_source
         soup = BS(content, 'lxml')
         event_markets = soup.select('.event-market')
@@ -152,7 +127,7 @@ class ParimatchParser:
         command1 = soup.select('.scoreboard__name')[0].text
         command2 = soup.select('.scoreboard__name')[1].text
         for event in event_markets:
-            if event.select('.event-market__title')[0].text.replace(' ','') == 'Тотал':
+            if event.select('.event-market__title')[0].text.replace(' ', '') == 'Тотал':
                 total_all = event.select('.event-outcome-group')
                 for total in total_all:
                     _t_ot_m = {'points': total.select('.event-outcome-group-head')[0].text,
@@ -161,28 +136,105 @@ class ParimatchParser:
                                'coef': total.select('.event-outcome__value')[1].text}
                     t_ot_m.append(_t_ot_m)
                     t_ot_s.append(_t_ot_s)
-            if event.select(".event-market__title")[0].text.replace(' ', '') == f'Индивидуальныйтотал{command1}'.replace(' ', ''):
+            if event.select(".event-market__title")[0].text.replace(' ',
+                                                                    '') == f'Индивидуальныйтотал{command1}'.replace(' ',
+                                                                                                                    ''):
                 total_all = event.select('.event-outcome-group')
                 for total in total_all:
                     _t_it_m_1 = {'points': total.select('.event-outcome-group-head')[0].text,
-                               'coef': total.select('.event-outcome__value')[0].text}
+                                 'coef': total.select('.event-outcome__value')[0].text}
                     _t_it_s_1 = {'points': total.select('.event-outcome-group-head')[0].text,
-                               'coef': total.select('.event-outcome__value')[1].text}
+                                 'coef': total.select('.event-outcome__value')[1].text}
                     t_it_m_1.append(_t_it_m_1)
                     t_it_s_1.append(_t_it_s_1)
-            if event.select(".event-market__title")[0].text.replace(' ', '') == f'Индивидуальныйтотал{command2}'.replace(' ', ''):
+            if event.select(".event-market__title")[0].text.replace(' ',
+                                                                    '') == f'Индивидуальныйтотал{command2}'.replace(' ',
+                                                                                                                    ''):
                 total_all = event.select('.event-outcome-group')
                 for total in total_all:
                     _t_it_m_2 = {'points': total.select('.event-outcome-group-head')[0].text,
-                               'coef': total.select('.event-outcome__value')[0].text}
+                                 'coef': total.select('.event-outcome__value')[0].text}
                     _t_it_s_2 = {'points': total.select('.event-outcome-group-head')[0].text,
-                               'coef': total.select('.event-outcome__value')[1].text}
+                                 'coef': total.select('.event-outcome__value')[1].text}
                     t_it_m_2.append(_t_it_m_2)
                     t_it_s_2.append(_t_it_s_2)
         value_main['total_total'] = {'more': t_ot_m, 'smaller': t_ot_s}
         value_main['individ_total_1'] = {'more': t_it_m_1, 'smaller': t_it_s_1}
         value_main['individ_total_2'] = {'more': t_it_m_2, 'smaller': t_it_s_2}
         return value_main
+
+    # def get_value(self, href):
+    #     url = 'https://www.parimatch.ru' + href
+    #     print(url)
+    #     if not self.browser_match:
+    #         self.open_browser_match()
+    #         self.browser_match.get(url)
+    #     else:
+    #         current_urls = self.get_current_urls(self.browser_match)
+    #         print(current_urls)
+    #         if self.browser_match.current_url != url:
+    #             if url in current_urls:
+    #                 for page in self.browser_match.window_handles:
+    #                     self.browser_match.switch_to.window(page)
+    #                     if self.browser_match.find_elements_by_css_selector('.event-deleted'):
+    #                         self.browser_match.close()
+    #                     if self.browser_match.current_url == url:
+    #                         break
+    #             else:
+    #                 self.count += 4123
+    #                 self.browser_match.execute_script(f'window.open("{url}", "{self.count}")')
+    #                 self.browser_match.switch_to.window(self.browser_match.window_handles[-1])
+    #     start_time_try = time.time()
+    #     while True:
+    #         if time.time() - start_time_try > 5:
+    #             self.browser_match.get(url)
+    #             start_time_try = time.time()
+    #         try:
+    #             elements = self.browser_match.find_elements_by_css_selector('.event-outcome__value')
+    #             if elements:
+    #                 if not False in [False for el in elements if not el.text]:
+    #                     break
+    #         except NoSuchElementException:
+    #             print('except')
+    #             pass
+    #     value_main = self.value()
+    #     return value_main
+
+    def loading_page(self,url):
+        start_time_try = time.time()
+        while True:
+            if time.time() - start_time_try > 5:
+                self.browser_match.get(url)
+                start_time_try = time.time()
+            try:
+                elements = self.browser_match.find_elements_by_css_selector('.event-outcome__value')
+                if elements:
+                    if not False in [False for el in elements if not el.text]:
+                        return
+            except NoSuchElementException:
+                print('except')
+                pass
+
+    def get_value(self, href):
+        url = 'https://www.parimatch.ru' + href
+        if not self.browser_match:
+             self.open_browser_match()
+        self.browser_match.get(url)
+        self.loading_page(url)
+        while True:
+            try:
+                value_main = self.value()
+                return value_main
+            except Exception:
+                self.browser_match.get(url)
+                self.loading_page(url)
+
+
+if __name__ == "__main__":
+    parser = ParimatchParser()
+    parser.get_events()
+    while True:
+        print(parser.get_events())
 
 # parser = ParimatchParser()
 # while True:
