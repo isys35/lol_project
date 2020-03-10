@@ -20,6 +20,8 @@ class ParimatchParser:
         response = req.response(self.url, self.headers)
         soup = BS(response.content, 'lxml')
         sport_basketball = soup.select('.sport.basketball')
+        # with open('parimatch.html', 'w', encoding='utf8') as html_file:
+        #     html_file.write(str(sport_basketball))
         if sport_basketball:
             champs = sport_basketball[0].select('.sport.item')
         else:
@@ -30,30 +32,45 @@ class ParimatchParser:
         events = sport_basketball[0].select('.subitem')
         events_info = []
         for event in events:
+            print('.')
             name_block = event.select('.td_n')
-            href = name_block[0].select('a')[0]['href']
-            score_full = name_block[0].select('.score')[0].text
-            commands = name_block[0].text.replace(score_full, '').strip()
-            command1 = commands.split(' - ')[0].strip()
-            command2 = commands.split(' - ')[1].strip()
             champ = champs_dict[event['id'].replace('Item', '')]
-            total_score1 = score_full.split('(')[0].split('-')[0]
-            total_score2 = score_full.split('(')[0].split('-')[-1] # есть ошибка, видимо в начале матча
-            score_sets = score_full.split('(')[1].replace(')', '')
-            scores_1 = [el.split('-')[0] for el in score_sets.split(',')]
-            scores_2 = [el.split('-')[1] for el in score_sets.split(',')]
-            event_info = {
-                'href': href,
-                'champ': champ,
-                'command1': command1,
-                'command2': command2,
-                'total_score1': int(total_score1),
-                'total_score2': int(total_score2),
-                'scores_1': scores_1,
-                'scores_2': scores_2,
-                'time': None,
-            }
-            events_info.append(event_info)
+            for match in name_block:
+                print('..')
+                href = match.select('a')[0]['href']
+                score_full = match.select('.score')[0].text
+                commands = match.text.replace(score_full, '').strip()
+                command1 = commands.split(' - ')[0].strip()
+                command2 = commands.split(' - ')[1].strip()
+                total_score1 = score_full.split('(')[0].split('-')[0]
+                total_score2 = score_full.split('(')[0].split('-')[-1] # есть ошибка, видимо в начале матча
+                if total_score1:
+                    total_score1 = int(total_score1)
+                else:
+                    total_score1 = 0
+                if total_score2:
+                    total_score2 = int(total_score2)
+                else:
+                    total_score2 = 0
+                try:
+                    score_sets = score_full.split('(')[1].replace(')', '')
+                    scores_1 = [el.split('-')[0] for el in score_sets.split(',')]
+                    scores_2 = [el.split('-')[1] for el in score_sets.split(',')]
+                except IndexError:
+                    scores_1 = [0]
+                    scores_2 = [0]
+                event_info = {
+                    'href': href,
+                    'champ': champ,
+                    'command1': command1,
+                    'command2': command2,
+                    'total_score1': total_score1,
+                    'total_score2': total_score2,
+                    'scores_1': scores_1,
+                    'scores_2': scores_2,
+                    'time': None,
+                }
+                events_info.append(event_info)
         return events_info
 
     def get_value(self, href):
@@ -83,6 +100,4 @@ class ParimatchParser:
 if __name__ == "__main__":
     parser = ParimatchParser()
     events = parser.get_events()
-    for event in events:
-        value = parser.get_value(event['href'])
-        print(value)
+    print(events)

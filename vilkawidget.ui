@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>597</width>
-    <height>194</height>
+    <width>673</width>
+    <height>162</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,6 +16,12 @@
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <widget class="QGroupBox" name="groupBox">
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>200</height>
+      </size>
+     </property>
      <property name="title">
       <string>GroupBox</string>
      </property>
@@ -27,7 +33,7 @@
           <item>
            <widget class="QLabel" name="label_2">
             <property name="text">
-             <string>0.97%</string>
+             <string/>
             </property>
            </widget>
           </item>
@@ -47,7 +53,7 @@
           <item>
            <widget class="QLabel" name="label_4">
             <property name="text">
-             <string>Перерыв</string>
+             <string/>
             </property>
             <property name="alignment">
              <set>Qt::AlignCenter</set>
@@ -57,7 +63,7 @@
           <item>
            <widget class="QLabel" name="label">
             <property name="text">
-             <string>2 мин.</string>
+             <string/>
             </property>
             <property name="alignment">
              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -99,7 +105,7 @@
                </size>
               </property>
               <property name="text">
-               <string>Названия комманд</string>
+               <string/>
               </property>
              </widget>
             </item>
@@ -112,7 +118,7 @@
                </size>
               </property>
               <property name="text">
-               <string>Чемпионат</string>
+               <string/>
               </property>
              </widget>
             </item>
@@ -121,21 +127,21 @@
           <item>
            <widget class="QLabel" name="label_11">
             <property name="text">
-             <string>ТО1</string>
+             <string/>
             </property>
            </widget>
           </item>
           <item>
            <widget class="QLabel" name="label_13">
             <property name="text">
-             <string>Замок</string>
+             <string/>
             </property>
            </widget>
           </item>
           <item>
            <widget class="QLabel" name="label_15">
             <property name="text">
-             <string>КФ1</string>
+             <string/>
             </property>
            </widget>
           </item>
@@ -167,7 +173,7 @@
                </size>
               </property>
               <property name="text">
-               <string>Названия комманд</string>
+               <string/>
               </property>
              </widget>
             </item>
@@ -180,7 +186,7 @@
                </size>
               </property>
               <property name="text">
-               <string>Чемпионат</string>
+               <string/>
               </property>
              </widget>
             </item>
@@ -189,21 +195,21 @@
           <item>
            <widget class="QLabel" name="label_12">
             <property name="text">
-             <string>ТО2</string>
+             <string/>
             </property>
            </widget>
           </item>
           <item>
            <widget class="QLabel" name="label_14">
             <property name="text">
-             <string>Замок</string>
+             <string/>
             </property>
            </widget>
           </item>
           <item>
            <widget class="QLabel" name="label_16">
             <property name="text">
-             <string>КФ2</string>
+             <string/>
             </property>
            </widget>
           </item>
