@@ -38,9 +38,12 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.xbet = XBetParser()
         self.pushButton.clicked.connect(self.start_find_same_matches)
         self.find_same_matches = ThreadParser(self)
+        self.same_matches = ThreadSameMatcth(self, self.find_same_matches)
+
 
     def start_find_same_matches(self):
         self.find_same_matches.start()
+        self.same_matches.start()
 
 
 class ThreadParser(QThread):
@@ -78,7 +81,19 @@ class ThreadParser(QThread):
         while True:
             events = self.get_events()
             self.same_matches = self.search_matches(events)
-            print(len(self.same_matches))
+
+
+class ThreadSameMatcth(QThread):
+    def __init__(self, window, finded_match):
+        super().__init__()
+        self.window = window
+        self.finded_match = finded_match
+
+    def run(self):
+        while True:
+            if self.finded_match.same_matches:
+                pass
+
 
 
 
