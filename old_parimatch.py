@@ -58,7 +58,6 @@ class ParimatchParser:
 
     def get_value(self, href):
         url = 'http://ru.parimatch.com/' + href
-        print(url)
         headers = self.headers
         headers['Referer'] = self.url
         response = req.response(url, headers)

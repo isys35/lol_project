@@ -1,29 +1,14 @@
 #from threading import Thread
 from xbet import XBetParser
 from parimatch import ParimatchParser
-
-
-# class Parsing(Thread):
-#     def __init__(self, website_object, name):
-#         super().__init__()
-#         self.website_object = website_object
-#         self.name = name
-#         self.events = []
-#         self.action = True
-#
-#     def parsing(self):
-#         self.events = self.website_object.get_events()
-#
-#     def pause(self):
-#         self.action = False
-#
-#     def play(self):
-#         self.action = True
-#
-#     def run(self):
-#         while True:
-#             if self.action:
-#                 self.parsing()
+from PyQt5 import QtGui, QtWidgets
+from PyQt5.QtCore import QThread, Qt
+import mainwindow
+import frame
+import traceback
+import sys
+from old_parimatch import ParimatchParser
+from xbet import XBetParser
 
 
 def transform_name(events, key):
@@ -45,111 +30,67 @@ def transform_name(events, key):
     return names
 
 
-# def main():
-#     print('loading...')
-#     xbet_parser = XBetParser()
-#     parimatch_parser = ParimatchParser()
-#     parimatch_parser.open_browser()
-#     parimatch_parser.open_browser_match()
-#     xbet_th = Parsing(xbet_parser, '1Xbet')
-#     xbet_th.start()
-#     parimatch_th = Parsing(parimatch_parser, 'parimatch')
-#     parimatch_th.start()
-#     while True:
-#         events_xbet = xbet_th.events
-#         events_parimatch = parimatch_th.events
-#         if events_xbet and events_parimatch:
-#             xbet_th.pause()
-#             parimatch_th.pause()
-#             command1_transform_xbet = transform_name(events_xbet, 'command1')
-#             command1_transform_parimatch = transform_name(events_parimatch, 'command1')
-#             matches = []
-#             for i in range(0, len(command1_transform_xbet)):
-#                 if command1_transform_xbet[i] in command1_transform_parimatch:
-#                     match = [xbet_th.events[i],
-#                             parimatch_th.events[command1_transform_parimatch.index(command1_transform_xbet[i])]]
-#                     if not match in matches:
-#                         matches.append(match)
-#             command2_transform_xbet = transform_name(events_xbet, 'command2')
-#             command2_transform_parimatch = transform_name(events_parimatch, 'command2')
-#             for i in range(0, len(command2_transform_xbet)):
-#                 if command2_transform_xbet[i] in command2_transform_parimatch:
-#                     match = [xbet_th.events[i],
-#                             parimatch_th.events[command2_transform_parimatch.index(command2_transform_xbet[i])]]
-#                     if not match in matches:
-#                         matches.append(match)
-#             print(f'[INFO] Найдено {len(matches)} совпадений')
-#             for match in matches:
-#                 print(f'Основные данные для {matches.index(match)+1} -го совпадения')
-#                 print('********1xbet*************')
-#                 print(match[0])
-#                 print('********Parimatch***********')
-#                 print(match[1])
-#                 total_value, set_value = xbet_parser.get_value(match[0]['href'])
-#                 if not total_value:
-#                     continue
-#                 print(f'Коэф-ты для {matches.index(match) + 1} -го совпадения')
-#                 print('********1xbet*************')
-#                 print('Общие')
-#                 print(total_value)
-#                 # print('По четверти')
-#                 # print(set_value)
-#                 total_value2 = parimatch_parser.get_value(match[1]['href'])
-#                 print('********Parimatch*************')
-#                 print('Общие')
-#                 print(total_value2)
-#             xbet_th.events = []
-#             xbet_th.play()
-#             parimatch_th.events = []
-#             parimatch_th.play()
+class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+        self.parimatch = ParimatchParser()
+        self.xbet = XBetParser()
+        self.pushButton.clicked.connect(self.start_find_same_matches)
+        self.find_same_matches = ThreadParser(self)
+
+    def start_find_same_matches(self):
+        self.find_same_matches.start()
+
+
+class ThreadParser(QThread):
+    def __init__(self, window):
+        super().__init__()
+        self.window = window
+        self.same_matches = []
+
+    def get_events(self):
+        self.window.statusBar().showMessage('получение игр parimatch.com ...')
+        events_parimatch = self.window.parimatch.get_events()
+        self.window.statusBar().showMessage(f'найдено {len(events_parimatch)} игр ...')
+        self.window.label_5.setText(f'{len(events_parimatch)}')
+        self.window.statusBar().showMessage('получение игр 1xstavka.ru ...')
+        if not events_parimatch:
+            self.window.statusBar().showMessage('parimatch.com 0 игр ...')
+            return
+        events_xbet = self.window.xbet.get_events()
+        self.window.statusBar().showMessage(f'найдено {len(events_xbet)} игр ...')
+        self.window.label_3.setText(f'{len(events_xbet)}')
+        return {'pari':events_parimatch, 'xbet': events_xbet}
+
+    def search_matches(self, events: dict):
+        same_matches = []
+        for match_p in events['pari']:
+            for match_x in events['xbet']:
+                if match_p['total_score1'] and match_p['total_score2']:
+                    if match_p['total_score1'] == match_x['total_score1'] \
+                            and match_p['total_score2'] == match_x['total_score2']:
+                        same_matches.append([match_p, match_x])
+        self.window.label_3.setText(f'{len(same_matches)}')
+        return same_matches
+
+    def run(self):
+        while True:
+            events = self.get_events()
+            self.same_matches = self.search_matches(events)
+            print(len(self.same_matches))
+
+
 
 def main():
-    print('loading...')
-    xbet_parser = XBetParser()
-    parimatch_parser = ParimatchParser()
-    parimatch_parser.open_browser()
-    parimatch_parser.open_browser_match()
-    while True:
-        events_xbet = xbet_parser.get_events()
-        events_parimatch = parimatch_parser.get_events()
-        if events_xbet and events_parimatch:
-            command1_transform_xbet = transform_name(events_xbet, 'command1')
-            command1_transform_parimatch = transform_name(events_parimatch, 'command1')
-            matches = []
-            for i in range(0, len(command1_transform_xbet)):
-                if command1_transform_xbet[i] in command1_transform_parimatch:
-                    match = [events_xbet[i],
-                            events_parimatch[command1_transform_parimatch.index(command1_transform_xbet[i])]]
-                    if not match in matches:
-                        matches.append(match)
-            command2_transform_xbet = transform_name(events_xbet, 'command2')
-            command2_transform_parimatch = transform_name(events_parimatch, 'command2')
-            for i in range(0, len(command2_transform_xbet)):
-                if command2_transform_xbet[i] in command2_transform_parimatch:
-                    match = [events_xbet[i],
-                            events_parimatch[command2_transform_parimatch.index(command2_transform_xbet[i])]]
-                    if not match in matches:
-                        matches.append(match)
-            print(f'[INFO] Найдено {len(matches)} совпадений')
-            for match in matches:
-                print(f'Основные данные для {matches.index(match)+1} -го совпадения')
-                print('********1xbet*************')
-                print(match[0])
-                print('********Parimatch***********')
-                print(match[1])
-                total_value, set_value = xbet_parser.get_value(match[0]['href'])
-                if not total_value:
-                    continue
-                print(f'Коэф-ты для {matches.index(match) + 1} -го совпадения')
-                print('********1xbet*************')
-                print('Общие')
-                print(total_value)
-                # print('По четверти')
-                # print(set_value)
-                total_value2 = parimatch_parser.get_value(match[1]['href'])
-                print('********Parimatch*************')
-                print('Общие')
-                print(total_value2)
+    try:
+        app = QtWidgets.QApplication(sys.argv)
+        window = MainApp()
+        window.show()
+        app.exec_()
+    except Exception as ex:
+        print(ex)
+        print(traceback.format_exc())
 
 if __name__ == "__main__":
     main()

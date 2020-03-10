@@ -46,10 +46,15 @@ class XBetParser:
             #print(href)
             #print(len(events_info))
             if i != 0:
-                if events_info[i-1]['href'].split('/')[-3] == href.split('/')[-3]:
-                    champ = events_info[i-1]['champ']
-                else:
-                    champ = champs_string.pop(0)
+                try:
+                    if events_info[i-1]['href'].split('/')[-3] == href.split('/')[-3]:
+                        champ = events_info[i-1]['champ']
+                    else:
+                        champ = champs_string.pop(0)
+                except IndexError:
+                    print(events)
+                    print(events_info)
+                    return []
             else:
                 champ = champs_string.pop(0)
             teams = events[i].select('.c-events__team')
