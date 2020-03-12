@@ -16,24 +16,12 @@ class XBetParser:
             'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:73.0) Gecko/20100101 Firefox/73.0'
         }
 
-    def get_response(self, url, headers):
-        time.sleep(self.delay)
-        while True:
-            print('Запрос к 1xbet')
-            r = None
-            while not r:
-                try:
-                    r = requests.get(url, headers=headers)
-                except ConnectionError as ex:
-                    print(ex)
-                    print('[WARNING] Проблема с соединением')
-                    time.sleep(1)
-            if r.status_code == 200:
-                return r
 
-    def get_events(self):
-        response = self.get_response(self.url, self.main_headers)
-        soup = BS(response.content, 'lxml')
+    def get_request_events(self):
+        return [self.url], [self.main_headers]
+
+    def get_events(self,response):
+        soup = BS(response, 'lxml')
         champs = soup.select('.c-events__liga')
         champs_string = []
         for champ in champs:
@@ -88,6 +76,13 @@ class XBetParser:
             events_info.append(event_info)
         return events_info
 
+    def get_request_value(self, href):
+        id, split_href = self.get_id(href)
+        url_koef = f'https://1xstavka.ru/LiveFeed/GetGameZip?id={id}&lng=ru&cfview=0&isSubGames=true&GroupEvents=true&allEventsGroupSubGames=true&countevents=250&partner=51&grMode=2'
+        headers = self.main_headers
+        headers['Referer'] = 'https://1xstavka.ru/' + id + split_href
+        return url_koef, headers
+
     def selected_values(self, json_object):
         if json_object['Value']['GE']:
             value = {}
@@ -116,23 +111,9 @@ class XBetParser:
     def get_id(self, url):
         return url.split('/')[-2].split('-')[0], url.split('/')[-2].replace(url.split('/')[-2].split('-')[0], '')+'/'
 
-    def get_value_json(self, id, url):
-        url_koef = f'https://1xstavka.ru/LiveFeed/GetGameZip?id={id}&lng=ru&cfview=0&isSubGames=true&GroupEvents=true&allEventsGroupSubGames=true&countevents=250&partner=51&grMode=2'
-        headers = self.main_headers
-        headers['Referer'] = 'https://1xstavka.ru/' + id + url
-        response = self.get_response(url_koef, headers)
-        return response.json()
-
-    def get_value(self, href):
-        id, split_href = self.get_id(href)
-        values_main_time_json = self.get_value_json(id, split_href)
-        values_main_time = self.selected_values(values_main_time_json)
-        if 'id_quarter' in values_main_time:
-            values_qurter_json = self.get_value_json(values_main_time['id_quarter'], split_href)
-            values_qurter = self.selected_values(values_qurter_json)
-        else:
-            values_qurter = {}
-        return values_main_time, values_qurter
+    def get_value(self, response):
+        values_main_time = self.selected_values(response.json())
+        return values_main_time
 
 
 if __name__ == "__main__":

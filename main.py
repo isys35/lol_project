@@ -8,7 +8,7 @@ from old_parimatch import ParimatchParser
 from xbet import XBetParser
 import vilkawidget
 import time
-
+import async_request
 
 def transform_name(events, key):
     names = []
@@ -57,6 +57,8 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         print(self.vilka_wigets)
 
 
+
+
 class VilkaWidget(QtWidgets.QWidget, vilkawidget.Ui_Form):
     def __init__(self, hrefs, champs, commands):
         super().__init__()
@@ -64,6 +66,7 @@ class VilkaWidget(QtWidgets.QWidget, vilkawidget.Ui_Form):
         self.hrefs = hrefs
         self.champs = champs
         self.commands = commands
+        self.value = []
         self.update_main_labels()
 
     def update_main_labels(self):
@@ -72,30 +75,30 @@ class VilkaWidget(QtWidgets.QWidget, vilkawidget.Ui_Form):
         self.label_8.setText(self.champs[0])
         self.label_10.setText(self.champs[1])
 
+    def update_value(self):
+        if self.value:
+            pass
+
+
 class ThreadParser(QThread):
     def __init__(self, window):
         super().__init__()
         self.window = window
 
     def get_events(self):
-        self.window.statusBar().showMessage('получение игр parimatch.com ...')
-        try:
-            events_parimatch = self.window.parimatch.get_events()
-        except Exception as ex:
-            print(ex)
-            print(traceback.format_exc())
-        print(events_parimatch)
-        self.window.statusBar().showMessage(f'найдено {len(events_parimatch)} игр ...')
-        self.window.label_5.setText(f'{len(events_parimatch)}')
-        self.window.statusBar().showMessage('получение игр 1xstavka.ru ...')
-        if not events_parimatch:
-            self.window.statusBar().showMessage('parimatch.com 0 игр ...')
-            return
-        events_xbet = self.window.xbet.get_events()
-        print(events_xbet)
-        self.window.statusBar().showMessage(f'найдено {len(events_xbet)} игр ...')
-        self.window.label_3.setText(f'{len(events_xbet)}')
-        return {'pari':events_parimatch, 'xbet': events_xbet}
+        self.window.statusBar().showMessage('получение игр...')
+        url_p,head_p = self.window.parimatch.get_request_events()
+        url_x,head_x = self.window.xbet.get_request_events()
+        url_p.append(url_x[0])
+        head_p.append(head_x[0])
+        async_req_urls = url_p
+        async_req_head = head_p
+        responces = async_request.input_reuqests(async_req_urls, async_req_head)
+        events_parimatch = self.window.parimatch.get_events(responces[0])
+        events_xbet = self.window.xbet.get_events(responces[1])
+        self.window.label_5.setText(str(len(events_parimatch)))
+        self.window.label_3.setText(str(len(events_xbet)))
+        return {'pari':events_parimatch, 'xbet':events_xbet }
 
     def search_matches(self, events: dict):
         same_matches = []
@@ -112,6 +115,56 @@ class ThreadParser(QThread):
         while True:
             events = self.get_events()
             self.window.same_matches = self.search_matches(events)
+
+
+class ThreadParserOdds(QThread):
+    def __init__(self, window):
+        super().__init__()
+        self.window = window
+
+    def get_odds(self):
+        urls_pari = []
+        heads_pari = []
+        urls_xbet = []
+        heads_xbet = []
+        vilkawidgets = self.window.vilka_wigets
+        for wigdet in vilkawidgets:
+            url_p, head_p =self.window.parimatch.get_request_value(wigdet.href[0])
+            urls_pari.append(url_p)
+            heads_pari.append(head_p)
+            url_x, head_x = self.window.xbet.get_request_value(wigdet.href[1])
+            urls_xbet.append(url_x)
+            heads_xbet.append(head_x)
+        urls_pari.extend(urls_xbet)
+        heads_pari.extend(heads_xbet)
+        async_req_urls = urls_pari
+        async_req_heads = heads_pari
+        responces = async_request.input_reuqests(async_req_urls, async_req_heads)
+        responces_pari = responces[:len(responces)/2]
+        responces_xbet = responces[len(responces) / 2:]
+        value_pari = []
+        for resp in responces_pari:
+            val_pari = self.window.parimatch.get_value(resp)
+            value_pari.append(val_pari)
+        value_xbet = []
+        for resp in responces_xbet:
+            val_xbet = self.window.xbet.get_value(resp)
+            value_xbet.append(val_xbet)
+        value_pari.extend(value_xbet)
+        for wigdet in self.window.vilka_wigets:
+            widget.value = []
+            for href in wigdet.href:
+                if href in urls_pari:
+                    widget.value.append(value_pari[urls_pari.index(href)])
+            widget.update_value()
+
+
+
+
+    def run(self):
+        while True:
+            if self.window.vilka_wigets:
+                self.get_odds()
 
 
 def main():

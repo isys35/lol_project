@@ -16,9 +16,12 @@ class ParimatchParser:
             'Cache-Control': 'max-age=0'
         }
 
-    def get_events(self):
-        response = req.response(self.url, self.headers)
-        soup = BS(response.content, 'lxml')
+    def get_request_events(self):
+        return [self.url], [self.headers]
+
+
+    def get_events(self, response):
+        soup = BS(response, 'lxml')
         sport_basketball = soup.select('.sport.basketball')
         # with open('parimatch.html', 'w', encoding='utf8') as html_file:
         #     html_file.write(str(sport_basketball))
@@ -37,6 +40,8 @@ class ParimatchParser:
             champ = champs_dict[event['id'].replace('Item', '')]
             for match in name_block:
                 print('..')
+                if not match.select('a'):
+                    return []
                 href = match.select('a')[0]['href']
                 score_full = match.select('.score')[0].text
                 commands = match.text.replace(score_full, '').strip()
@@ -73,12 +78,14 @@ class ParimatchParser:
                 events_info.append(event_info)
         return events_info
 
-    def get_value(self, href):
+    def get_request_value(self, href):
         url = 'http://ru.parimatch.com/' + href
         headers = self.headers
         headers['Referer'] = self.url
-        response = req.response(url, headers)
-        soup = BS(response.content, 'lxml')
+        return url, headers
+
+    def get_value(self, response):
+        soup = BS(response, 'lxml')
         main_block = soup.select('.row1')
         tds = main_block[0].select('td')
         value_main = {}
