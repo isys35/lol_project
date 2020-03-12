@@ -1,5 +1,6 @@
 import requests
 from bs4 import BeautifulSoup as BS
+import json
 import time
 from requests.exceptions import ConnectionError
 
@@ -112,7 +113,7 @@ class XBetParser:
         return url.split('/')[-2].split('-')[0], url.split('/')[-2].replace(url.split('/')[-2].split('-')[0], '')+'/'
 
     def get_value(self, response):
-        values_main_time = self.selected_values(response.json())
+        values_main_time = self.selected_values(json.loads(response))
         return values_main_time
 
 

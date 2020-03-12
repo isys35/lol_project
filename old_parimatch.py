@@ -86,22 +86,44 @@ class ParimatchParser:
 
     def get_value(self, response):
         soup = BS(response, 'lxml')
-        main_block = soup.select('.row1')
-        tds = main_block[0].select('td')
+        main_block = soup.select('#oddsList')
+        main_info = main_block[0].select('.bk')
+        if not main_info:
+            return {}
+        tds = main_info[0].select('td')
         value_main = {}
-        if len(tds) < 13:
+        print(len(tds))
+        if len(tds) == 3 and tds[2].text == 'Прием ставок приостановлен':
+            print('Прием ставок приостановлен')
             return value_main
-        value_main = {}
-        t_ot_m = [{'coef': tds[5].text, 'points': tds[4].text}]
-        t_ot_s = [{'coef': tds[6].text, 'points': tds[4].text}]
-        t_it_m_1 = [{'coef': tds[11].select('u')[0].text, 'points': tds[10].select('b')[0].text}]
-        t_it_s_1 = [{'coef': tds[12].select('u')[0].text, 'points': tds[10].select('b')[0].text}]
-        t_it_m_2 = [{'coef': tds[11].select('u')[1].text, 'points': tds[10].select('b')[1].text}]
-        t_it_s_2 = [{'coef': tds[12].select('u')[1].text, 'points': tds[10].select('b')[1].text}]
-        value_main['total_total'] = {'more': t_ot_m, 'smaller': t_ot_s}
-        value_main['individ_total_1'] = {'more': t_it_m_1, 'smaller': t_it_s_1}
-        value_main['individ_total_2'] = {'more': t_it_m_2, 'smaller': t_it_s_2}
-        return value_main
+        if len(tds) == 2 or len(tds) == 5 or len(tds) == 4:
+            print('Нету коэф')
+            return value_main
+        with open('parimatch.html', 'w', encoding='utf8') as html_file:
+             html_file.write(str(main_block))
+        for td in tds:
+            print(td.text)
+        t_ot_m = [{'coef': float(tds[5].text), 'points': float(tds[4].text)}]
+        t_ot_s = [{'coef': float(tds[6].text), 'points': float(tds[4].text)}]
+        if len(tds) == 13:
+            t_it_m_1 = [{'coef': tds[11].select('u')[0].text, 'points': float(tds[10].select('b')[0].text)}]
+            t_it_s_1 = [{'coef': tds[12].select('u')[0].text, 'points': float(tds[10].select('b')[0].text)}]
+            t_it_m_2 = [{'coef': tds[11].select('u')[1].text, 'points': float(tds[10].select('b')[1].text)}]
+            t_it_s_2 = [{'coef': tds[12].select('u')[1].text, 'points': float(tds[10].select('b')[1].text)}]
+            value_main['total_total'] = {'more': t_ot_m, 'smaller': t_ot_s}
+            value_main['individ_total_1'] = {'more': t_it_m_1, 'smaller': t_it_s_1}
+            value_main['individ_total_2'] = {'more': t_it_m_2, 'smaller': t_it_s_2}
+            return value_main
+        elif len(tds) == 11:
+            t_it_m_1 = [{'coef': tds[9].select('u')[0].text, 'points': float(tds[8].select('b')[0].text)}]
+            t_it_s_1 = [{'coef': tds[10].select('u')[0].text, 'points': float(tds[8].select('b')[0].text)}]
+            t_it_m_2 = [{'coef': tds[9].select('u')[1].text, 'points': float(tds[8].select('b')[1].text)}]
+            t_it_s_2 = [{'coef': tds[10].select('u')[1].text, 'points': float(tds[8].select('b')[1].text)}]
+            value_main['total_total'] = {'more': t_ot_m, 'smaller': t_ot_s}
+            value_main['individ_total_1'] = {'more': t_it_m_1, 'smaller': t_it_s_1}
+            value_main['individ_total_2'] = {'more': t_it_m_2, 'smaller': t_it_s_2}
+            return value_main
+
 
 
 if __name__ == "__main__":

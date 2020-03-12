@@ -38,11 +38,13 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.pushButton.clicked.connect(self.start_find_same_matches)
         self.pushButton_2.clicked.connect(self.update_vilka_widgets)
         self.find_same_matches = ThreadParser(self)
+        self.threadparserodds = ThreadParserOdds(self)
         self.same_matches = []
         self.vilka_wigets = []
 
     def start_find_same_matches(self):
         self.find_same_matches.start()
+        self.threadparserodds.start()
 
     def update_vilka_widgets(self):
         if not self.same_matches:
@@ -77,7 +79,46 @@ class VilkaWidget(QtWidgets.QWidget, vilkawidget.Ui_Form):
 
     def update_value(self):
         if self.value:
-            pass
+            if not self.value[0] or not self.value[1]:
+                return
+            print(self.value)
+            t_points_pari = []
+            t_points_xbet = []
+            for bet in self.value[0]['total_total']['more']:
+                t_points_pari.append(bet['points'])
+            for bet in self.value[1]['total_total']['more']:
+                t_points_xbet.append(bet['points'])
+            t_tootal_point = []
+            print(t_points_pari)
+            print(t_points_xbet)
+            for point in t_points_pari:
+                if point in t_points_xbet:
+                    t_tootal_point.append(point)
+            t_koef_pari = []
+            t_koef_xbet = []
+            if t_tootal_point:
+                print(t_tootal_point)
+                for point in t_tootal_point:
+                    for bet in self.value[0]['total_total']['more']:
+                        if bet['points'] == point:
+                            t_koef_pari.append(bet['coef'])
+                            break
+                    for bet in self.value[1]['total_total']['smaller']:
+                        if bet['points'] == point:
+                            t_koef_xbet.append(bet['coef'])
+                            break
+                vilki = []
+                for i in range(0,len(t_koef_pari)):
+                    vilka = 1/t_koef_pari[i] + 1/t_koef_xbet[i]
+                    vilki.append(vilka)
+                d = [100*(vilka-1) for vilka in vilki]
+                self.label_2.setText(str(round(d[0],2)))
+                self.label_11.setText('Т больше {}'.format(t_tootal_point[0]))
+                self.label_12.setText('Т меньше {}'.format(t_tootal_point[0]))
+                self.label_15.setText('{}'.format(t_koef_pari[0]))
+                self.label_16.setText('{}'.format(t_koef_xbet[0]))
+
+
 
 
 class ThreadParser(QThread):
@@ -128,20 +169,33 @@ class ThreadParserOdds(QThread):
         urls_xbet = []
         heads_xbet = []
         vilkawidgets = self.window.vilka_wigets
+        hrefs_pari = []
+        hrefs_xbet = []
+        print(len(self.window.vilka_wigets))
         for wigdet in vilkawidgets:
-            url_p, head_p =self.window.parimatch.get_request_value(wigdet.href[0])
+            hrefs_pari.append(wigdet.hrefs[0])
+            url_p, head_p =self.window.parimatch.get_request_value(wigdet.hrefs[0])
             urls_pari.append(url_p)
             heads_pari.append(head_p)
-            url_x, head_x = self.window.xbet.get_request_value(wigdet.href[1])
+            hrefs_xbet.append(wigdet.hrefs[1])
+            url_x, head_x = self.window.xbet.get_request_value(wigdet.hrefs[1])
             urls_xbet.append(url_x)
             heads_xbet.append(head_x)
         urls_pari.extend(urls_xbet)
+        hrefs_pari.extend(hrefs_xbet)
         heads_pari.extend(heads_xbet)
         async_req_urls = urls_pari
         async_req_heads = heads_pari
+        print(async_req_urls)
+        print(async_req_heads)
         responces = async_request.input_reuqests(async_req_urls, async_req_heads)
-        responces_pari = responces[:len(responces)/2]
-        responces_xbet = responces[len(responces) / 2:]
+        i = int(len(responces)/2)
+        if i == 1:
+            responces_pari = [responces[0]]
+            responces_xbet = [responces[1]]
+        else:
+            responces_pari = responces[:i]
+            responces_xbet = responces[i:]
         value_pari = []
         for resp in responces_pari:
             val_pari = self.window.parimatch.get_value(resp)
@@ -151,20 +205,25 @@ class ThreadParserOdds(QThread):
             val_xbet = self.window.xbet.get_value(resp)
             value_xbet.append(val_xbet)
         value_pari.extend(value_xbet)
-        for wigdet in self.window.vilka_wigets:
+        print('value_pari')
+        print(value_pari)
+        for widget in self.window.vilka_wigets:
             widget.value = []
-            for href in wigdet.href:
-                if href in urls_pari:
-                    widget.value.append(value_pari[urls_pari.index(href)])
+            for href in widget.hrefs:
+                if href in hrefs_pari:
+                    print('True')
+                    widget.value.append(value_pari[hrefs_pari.index(href)])
             widget.update_value()
-
-
-
 
     def run(self):
         while True:
             if self.window.vilka_wigets:
-                self.get_odds()
+                time.sleep(1)
+                try:
+                    self.get_odds()
+                except Exception as ex:
+                    print(ex)
+                    print(traceback.format_exc())
 
 
 def main():
