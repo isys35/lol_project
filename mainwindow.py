@@ -20,9 +20,6 @@ class Ui_MainWindow(object):
         self.verticalLayout_2.setObjectName("verticalLayout_2")
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
-        self.pushButton = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton.setObjectName("pushButton")
-        self.horizontalLayout.addWidget(self.pushButton)
         self.verticalLayout_4 = QtWidgets.QVBoxLayout()
         self.verticalLayout_4.setObjectName("verticalLayout_4")
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
@@ -67,6 +64,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_3.addWidget(self.groupBox)
         self.verticalLayout_2.addLayout(self.verticalLayout_3)
         self.pushButton_2 = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButton_2.setEnabled(True)
         self.pushButton_2.setObjectName("pushButton_2")
         self.verticalLayout_2.addWidget(self.pushButton_2)
         self.verticalLayout = QtWidgets.QVBoxLayout()
@@ -100,7 +98,6 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.pushButton.setText(_translate("MainWindow", "connect"))
         self.label.setText(_translate("MainWindow", "Количество одинаковых матчей:"))
         self.label_6.setText(_translate("MainWindow", "Количество матчей parimatch:"))
         self.label_4.setText(_translate("MainWindow", "Количество матчей 1xbet:"))

@@ -123,6 +123,15 @@ class ParimatchParser:
             value_main['individ_total_1'] = {'more': t_it_m_1, 'smaller': t_it_s_1}
             value_main['individ_total_2'] = {'more': t_it_m_2, 'smaller': t_it_s_2}
             return value_main
+        elif len(tds) == 10:
+            t_it_m_1 = [{'coef': False, 'points': False}]
+            t_it_s_1 = [{'coef': False, 'points': False}]
+            t_it_m_2 = [{'coef': False, 'points': False}]
+            t_it_s_2 = [{'coef': False, 'points': False}]
+            value_main['total_total'] = {'more': t_ot_m, 'smaller': t_ot_s}
+            value_main['individ_total_1'] = {'more': t_it_m_1, 'smaller': t_it_s_1}
+            value_main['individ_total_2'] = {'more': t_it_m_2, 'smaller': t_it_s_2}
+            return value_main
 
 
 

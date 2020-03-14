@@ -100,10 +100,10 @@ class XBetParser:
                     t_it_m_2 = [{'coef': t['C'], 'points': t['P']} for t in el['E'][0]]
                     t_it_s_2 = [{'coef': t['C'], 'points': t['P']} for t in el['E'][1]]
                     value['individ_total_2'] = {'more': t_it_m_2, 'smaller': t_it_s_2}
-            if 'SG' in json_object['Value']:
-                value['id_quarter'] = str(json_object['Value']['SG'][-1]['I'])
-                if 'PN' in json_object['Value']['SG'][-1]:
-                    value['name_quarter'] = json_object['Value']['SG'][-1]['PN']
+            # if 'SG' in json_object['Value']:
+            #     value['id_quarter'] = str(json_object['Value']['SG'][-1]['I'])
+            #     if 'PN' in json_object['Value']['SG'][-1]:
+            #         value['name_quarter'] = json_object['Value']['SG'][-1]['PN']
         else:
             # ставок нету
             value = {}

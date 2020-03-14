@@ -9,6 +9,7 @@ from xbet import XBetParser
 import vilkawidget
 import time
 import async_request
+from PyQt5 import sip
 
 
 def transform_name(events, key):
@@ -43,26 +44,44 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.same_matches = []
         self.same_matches_objects = []
         self.vilka_widgets = []
-        self.vilka_data = []
 
     def start_find_same_matches(self):
         self.find_same_matches.start()
         self.threadparserodds.start()
 
     def update_vilka_widgets(self):
-        for game in self.vilka_data:
-            v = VilkaWidget(
-                    game[0],
-                    game[1],
-                    game[2],
-                    game[3],
-                    game[4],
-                    game[5],
-                    game[6]
-                )
-            self.vilka_widgets.append(v)
-            self.vilka_data.remove(game)
-            self.verticalLayout_5.addWidget(v)
+        vilka_not_del = []
+        for match in self.same_matches_objects:
+            for vilka in self.vilka_widgets:
+                for game in match.vilka_data:
+                    if not False in [game[0] == vilka.hrefs,
+                                    game[1] == vilka.champs,
+                                    game[2] == vilka.commands,
+                                    game[3] == vilka.point,
+                                    vilka not in vilka_not_del]:
+                        vilka_not_del.append(vilka)
+        for vilka in self.vilka_widgets:
+            if vilka not in vilka_not_del:
+                self.vilka_widgets.remove(vilka)
+                self.verticalLayout_5.removeWidget(vilka)
+                sip.delete(vilka)
+        for match in self.same_matches_objects:
+            for game in match.vilka_data:
+                v = VilkaWidget(
+                        game[0],
+                        game[1],
+                        game[2],
+                        game[3],
+                        game[4],
+                        game[5],
+                        game[6]
+                    )
+                self.vilka_widgets.append(v)
+                match.vilka_data.remove(game)
+                self.verticalLayout_5.addWidget(v)
+
+            # self.verticalLayout_5.removeWidget(v)
+            # sip.delete(v)
 
 
     def update_same_matches(self):
@@ -114,6 +133,7 @@ class SameGame:
         self.commands = commands
         self.value = []
         self.window = window
+        self.vilka_data = []
 
     def update_vilki(self):
         print('Обновление вилок')
@@ -156,16 +176,16 @@ class SameGame:
         print(t_vilki)
         d = [100*(1-vilka) for vilka in t_vilki]
         print(d)
-        self.window.vilka_data = []
+        self.vilka_data = []
         for i in range(0, len(d)):
-            self.window.vilka_data.append([self.hrefs,
+            self.vilka_data.append([self.hrefs,
                                self.champs,
                                self.commands,
                                t_tootal_point[i],
                                t_koef_pari[i],
                                t_koef_xbet[i],
                                d[i]])
-        for game in self.window.vilka_data:
+        for game in self.vilka_data:
             for vilka in self.window.vilka_widgets:
                 if not False in [game[0] == vilka.hrefs,
                                  game[1] == vilka.champs,
@@ -175,15 +195,14 @@ class SameGame:
                     vilka.k_x = game[5]
                     vilka.d = game[6]
                     vilka.update_odds_labels()
-                    self.window.vilka_data.remove(game)
-        if self.window.vilka_data:
-            print(self.window.vilka_data)
-            print('CLICK')
-            try:
-                self.window.pushButton_2.click()
-            except Exception as ex:
-                print(ex)
-                print(traceback.format_exc())
+                    self.vilka_data.remove(game)
+        print('CLICK')
+        try:
+            self.window.pushButton_2.click()
+        except Exception as ex:
+            print(ex)
+            print(traceback.format_exc())
+
 
 class ThreadParser(QThread):
     def __init__(self, window):
