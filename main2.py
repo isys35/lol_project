@@ -22,7 +22,57 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.update_same_matches = ThreadUpdateSameMatches(self)
         self.update_same_matches.start()
         self.same_events = []
+        self.pushButton_2.clicked.connect(self.update_vilka_wigets)
+        self.active_widgets = []
 
+    def update_vilka_wigets(self):
+        try:
+            if not self.active_widgets:
+                for events in self.same_events:
+                    for total_vilka in events.vilki['total_total']:
+                        vilkawidg = VilkaWidget(total_vilka)
+                        self.verticalLayout_5.addWidget(vilkawidg)
+                        self.active_widgets.append(vilkawidg)
+            if self.active_widgets:
+                for widget in self.active_widgets:
+                    if widget.vilka.status == 'dead':
+                        self.verticalLayout_5.removeWidget(widget)
+                        sip.delete(widget)
+                self.active_widgets = [widget for widget in self.active_widgets if widget.vilka.status != 'dead']
+                for widget in self.active_widgets:
+                    widget.update_odds_labels()
+                active_vilki = [widget.vilka for widget in self.active_widgets]
+                for events in self.same_events:
+                    for total_vilka in events.vilki['total_total']:
+                        if total_vilka not in active_vilki:
+                            vilkawidg = VilkaWidget(total_vilka)
+                            self.verticalLayout_5.addWidget(vilkawidg)
+                            self.active_widgets.append(vilkawidg)
+        except Exception as ex:
+            print(ex)
+            print(traceback.format_exc())
+
+
+class VilkaWidget(QtWidgets.QWidget, vilkawidget.Ui_Form):
+    def __init__(self, vilka):
+        super().__init__()
+        self.setupUi(self)
+        self.vilka = vilka
+        self.update_main_labels()
+        self.update_odds_labels()
+
+    def update_main_labels(self):
+        self.label_7.setText(self.vilka.commands[0][0] + ' - ' + self.vilka.commands[0][1])
+        self.label_9.setText(self.vilka.commands[1][0] + ' - ' + self.vilka.commands[1][1])
+        self.label_8.setText(self.vilka.champs[0])
+        self.label_10.setText(self.vilka.champs[1])
+
+    def update_odds_labels(self):
+        self.label_2.setText(str(round(self.vilka.value,2)))
+        self.label_11.setText(str(self.vilka.point))
+        self.label_12.setText(str(self.vilka.point))
+        self.label_15.setText(str(self.vilka.koef_pari))
+        self.label_16.setText(str(self.vilka.koef_xbet))
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
@@ -71,7 +121,18 @@ class ThreadParser(QThread):
              [[match['command1'], match['command2']] for match in events],
              self.window
         ) for events in same_events]
-        self.window.same_events = objects_events
+        if not self.window.same_events:
+            self.window.same_events = objects_events
+        else:
+            not_add_list = []
+            for event in objects_events:
+                for window_event in self.window.same_events:
+                    if event.hrefs == window_event.hrefs:
+                        not_add_list.append(event)
+                        break
+            for event in objects_events:
+                if event not in not_add_list:
+                    self.window.same_events.append(event)
 
     def run(self):
         while True:
@@ -85,7 +146,9 @@ class SameGame:
         self.champs = champs
         self.commands = commands
         self.window = window
-        self.vilki_o = []
+        self.vilki = {
+            'total_total': []
+        }
 
     def get_odds(self):
         url_p, head_p = self.window.parimatch.get_request_value(self.hrefs[0])
@@ -98,8 +161,7 @@ class SameGame:
         print(val_pari)
         print(val_xbet)
         if val_pari and val_xbet:
-            self.get_total_total_vilka(val_pari,val_xbet)
-
+            self.get_total_total_vilka(val_pari, val_xbet)
 
     def get_total_total_vilka(self,val_pari,val_xbet):
         points_pari = [bet['points'] for bet in val_pari['total_total']['more']]
@@ -108,21 +170,58 @@ class SameGame:
         print(points_xbet)
         coincidences = [p1 for p1 in points_pari for p2 in points_xbet if p1 == p2]
         print(coincidences)
-        if coincidences:
-            koef_pari = [bet['coef'] for bet in val_pari['total_total']['more']
-                         for point in coincidences if bet['points'] == point]
-            koef_xbet = [bet['coef'] for bet in val_xbet['total_total']['smaller']
-                         for point in coincidences if bet['points'] == point]
-            vilki = [1/koef_pari[i] + 1/koef_xbet[i] for i in range(len(coincidences))]
-            value = [100*(1-vilka) for vilka in vilki]
-            print(koef_pari)
-            print(koef_xbet)
-            print(vilki)
-            print(value)
+        if not coincidences:
+            return
+        koef_pari = [bet['coef'] for bet in val_pari['total_total']['more']
+                        for point in coincidences if bet['points'] == point]
+        koef_xbet = [bet['coef'] for bet in val_xbet['total_total']['smaller']
+                        for point in coincidences if bet['points'] == point]
+        vilki = [1/koef_pari[i] + 1/koef_xbet[i] for i in range(len(coincidences))]
+        value = [100*(1-vilka) for vilka in vilki]
+        print(koef_pari)
+        print(koef_xbet)
+        print(vilki)
+        print(value)
+        vilki_o = [Vilka(self,
+                        'total_total',
+                        coincidences[i],
+                        koef_pari[i],
+                        koef_xbet[i],
+                         value[i]) for i in range(len(coincidences))]
+        if not self.vilki['total_total']:
+            self.vilki['total_total'] = vilki_o
+        else:
+            update_list = []
+            for vilki in vilki_o:
+                for vilki_wind in self.vilki['total_total']:
+                    if vilki.hrefs == vilki_wind.hrefs and vilki.point == vilki_wind.point:
+                        vilki_wind.koef_pari = vilki.koef_pari
+                        vilki_wind.koef_xbet = vilki.koef_xbet
+                        vilki_wind.value = vilki_wind.value
+                        update_list.append(vilki)
+                        break
+            for vilki in self.vilki['total_total']:
+                if vilki not in update_list:
+                    vilki.status = 'dead'
+            self.vilki['total_total'] = [vilki for vilki in self.vilki['total_total'] if vilki.status != 'dead']
+            for vilki in vilki_o:
+                if vilki not in update_list:
+                    self.vilki['total_total'].append(vilki)
+        print(self.vilki['total_total'])
+        self.window.pushButton_2.click()
+
+
 
 class Vilka(SameGame):
-    def __init__(self, samegame, vilka_type, point, koef_pari, koef_xbet ):
+    def __init__(self, samegame, vilka_type, point, koef_pari, koef_xbet, value):
         super().__init__(samegame.hrefs, samegame.champs, samegame.commands, samegame.window)
+        self.vilka_type = vilka_type
+        self.point = point
+        self.koef_pari = koef_pari
+        self.koef_xbet = koef_xbet
+        self.value = value
+        self.status = 'life'
+
 
 
 class ThreadUpdateSameMatches(QThread):
