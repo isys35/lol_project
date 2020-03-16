@@ -26,11 +26,20 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.active_widgets = []
 
     def update_vilka_wigets(self):
+        print(self.same_events)
         try:
             if not self.active_widgets:
                 for events in self.same_events:
                     for total_vilka in events.vilki['total_total']:
                         vilkawidg = VilkaWidget(total_vilka)
+                        self.verticalLayout_5.addWidget(vilkawidg)
+                        self.active_widgets.append(vilkawidg)
+                    for individ1_vilka in events.vilki['individ_total_1']:
+                        vilkawidg = VilkaWidget(individ1_vilka)
+                        self.verticalLayout_5.addWidget(vilkawidg)
+                        self.active_widgets.append(vilkawidg)
+                    for individ2_vilka in events.vilki['individ_total_2']:
+                        vilkawidg = VilkaWidget(individ2_vilka)
                         self.verticalLayout_5.addWidget(vilkawidg)
                         self.active_widgets.append(vilkawidg)
             if self.active_widgets:
@@ -46,6 +55,16 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
                     for total_vilka in events.vilki['total_total']:
                         if total_vilka not in active_vilki:
                             vilkawidg = VilkaWidget(total_vilka)
+                            self.verticalLayout_5.addWidget(vilkawidg)
+                            self.active_widgets.append(vilkawidg)
+                    for individ1_vilka in events.vilki['individ_total_1']:
+                        if individ1_vilka not in active_vilki:
+                            vilkawidg = VilkaWidget(individ1_vilka)
+                            self.verticalLayout_5.addWidget(vilkawidg)
+                            self.active_widgets.append(vilkawidg)
+                    for individ2_vilka in events.vilki['individ_total_2']:
+                        if individ2_vilka not in active_vilki:
+                            vilkawidg = VilkaWidget(individ2_vilka)
                             self.verticalLayout_5.addWidget(vilkawidg)
                             self.active_widgets.append(vilkawidg)
         except Exception as ex:
@@ -68,6 +87,7 @@ class VilkaWidget(QtWidgets.QWidget, vilkawidget.Ui_Form):
         self.label_10.setText(self.vilka.champs[1])
 
     def update_odds_labels(self):
+        self.label.setText(str(self.vilka.time_life))
         self.label_2.setText(str(round(self.vilka.value,2)))
         self.label_11.setText(str(self.vilka.point))
         self.label_12.setText(str(self.vilka.point))
@@ -147,10 +167,13 @@ class SameGame:
         self.commands = commands
         self.window = window
         self.vilki = {
-            'total_total': []
+            'total_total': [],
+            'individ_total_1': [],
+            'individ_total_2': []
         }
 
     def get_odds(self):
+        time.sleep(1)
         url_p, head_p = self.window.parimatch.get_request_value(self.hrefs[0])
         url_x, head_x = self.window.xbet.get_request_value(self.hrefs[1])
         url = [url_p, url_x]
@@ -161,55 +184,59 @@ class SameGame:
         print(val_pari)
         print(val_xbet)
         if val_pari and val_xbet:
-            self.get_total_total_vilka(val_pari, val_xbet)
+            for key in self.vilki:
+                self.get_value(val_pari, val_xbet, key)
+            self.window.pushButton_2.click()
 
-    def get_total_total_vilka(self,val_pari,val_xbet):
-        points_pari = [bet['points'] for bet in val_pari['total_total']['more']]
-        points_xbet = [bet['points'] for bet in val_xbet['total_total']['more']]
+    def get_value(self,val_pari,val_xbet,key):
+        print(key)
+        points_pari = [bet['points'] for bet in val_pari[key]['more']]
+        points_xbet = [bet['points'] for bet in val_xbet[key]['more']]
         print(points_pari)
         print(points_xbet)
         coincidences = [p1 for p1 in points_pari for p2 in points_xbet if p1 == p2]
         print(coincidences)
         if not coincidences:
             return
-        koef_pari = [bet['coef'] for bet in val_pari['total_total']['more']
-                        for point in coincidences if bet['points'] == point]
-        koef_xbet = [bet['coef'] for bet in val_xbet['total_total']['smaller']
-                        for point in coincidences if bet['points'] == point]
-        vilki = [1/koef_pari[i] + 1/koef_xbet[i] for i in range(len(coincidences))]
-        value = [100*(1-vilka) for vilka in vilki]
+        koef_pari = [float(bet['coef']) for bet in val_pari[key]['more']
+                     for point in coincidences if bet['points'] == point]
+        koef_xbet = [bet['coef'] for bet in val_xbet[key]['smaller']
+                     for point in coincidences if bet['points'] == point]
+        print(koef_pari)
+        print(koef_xbet)
+        vilki = [1 / koef_pari[i] + 1 / koef_xbet[i] for i in range(len(coincidences))]
+        value = [100 * (1 - vilka) for vilka in vilki]
         print(koef_pari)
         print(koef_xbet)
         print(vilki)
         print(value)
         vilki_o = [Vilka(self,
-                        'total_total',
-                        coincidences[i],
-                        koef_pari[i],
-                        koef_xbet[i],
+                         key,
+                         coincidences[i],
+                         koef_pari[i],
+                         koef_xbet[i],
                          value[i]) for i in range(len(coincidences))]
-        if not self.vilki['total_total']:
-            self.vilki['total_total'] = vilki_o
+        if not self.vilki[key]:
+            self.vilki[key] = vilki_o
         else:
             update_list = []
             for vilki in vilki_o:
-                for vilki_wind in self.vilki['total_total']:
+                for vilki_wind in self.vilki[key]:
                     if vilki.hrefs == vilki_wind.hrefs and vilki.point == vilki_wind.point:
+                        print('такой виджет уже есть')
                         vilki_wind.koef_pari = vilki.koef_pari
                         vilki_wind.koef_xbet = vilki.koef_xbet
                         vilki_wind.value = vilki_wind.value
+                        vilki_wind.time_life = time.time() - vilki_wind.t0
                         update_list.append(vilki)
-                        break
-            for vilki in self.vilki['total_total']:
+            for vilki in self.vilki[key]:
                 if vilki not in update_list:
                     vilki.status = 'dead'
-            self.vilki['total_total'] = [vilki for vilki in self.vilki['total_total'] if vilki.status != 'dead']
+            self.vilki[key] = [vilki for vilki in self.vilki[key] if vilki.status != 'dead']
             for vilki in vilki_o:
                 if vilki not in update_list:
-                    self.vilki['total_total'].append(vilki)
-        print(self.vilki['total_total'])
-        self.window.pushButton_2.click()
-
+                    self.vilki[key].append(vilki)
+        print(self.vilki[key])
 
 
 class Vilka(SameGame):
@@ -221,6 +248,9 @@ class Vilka(SameGame):
         self.koef_xbet = koef_xbet
         self.value = value
         self.status = 'life'
+        self.t0 = time.time()
+        self.time_life = 0
+
 
 
 
