@@ -45,6 +45,7 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             if self.active_widgets:
                 for widget in self.active_widgets:
                     if widget.vilka.status == 'dead':
+                        print('удаляем мёртвый виджет')
                         self.verticalLayout_5.removeWidget(widget)
                         sip.delete(widget)
                 self.active_widgets = [widget for widget in self.active_widgets if widget.vilka.status != 'dead']
@@ -171,9 +172,10 @@ class SameGame:
             'individ_total_1': [],
             'individ_total_2': []
         }
+        self.count_dead = 0
+        self.status = 'life'
 
     def get_odds(self):
-        time.sleep(1)
         url_p, head_p = self.window.parimatch.get_request_value(self.hrefs[0])
         url_x, head_x = self.window.xbet.get_request_value(self.hrefs[1])
         url = [url_p, url_x]
@@ -184,9 +186,15 @@ class SameGame:
         print(val_pari)
         print(val_xbet)
         if val_pari and val_xbet:
+            self.count_dead = 0
             for key in self.vilki:
                 self.get_value(val_pari, val_xbet, key)
-            self.window.pushButton_2.click()
+        if not val_pari and not val_xbet:
+            if self.count_dead == 4:
+                self.status = 'dead'
+            else:
+                self.count_dead += 1
+
 
     def get_value(self,val_pari,val_xbet,key):
         print(key)
@@ -219,24 +227,27 @@ class SameGame:
         if not self.vilki[key]:
             self.vilki[key] = vilki_o
         else:
-            update_list = []
-            for vilki in vilki_o:
-                for vilki_wind in self.vilki[key]:
-                    if vilki.hrefs == vilki_wind.hrefs and vilki.point == vilki_wind.point:
-                        print('такой виджет уже есть')
-                        vilki_wind.koef_pari = vilki.koef_pari
-                        vilki_wind.koef_xbet = vilki.koef_xbet
-                        vilki_wind.value = vilki_wind.value
-                        vilki_wind.time_life = time.time() - vilki_wind.t0
-                        update_list.append(vilki)
             for vilki in self.vilki[key]:
-                if vilki not in update_list:
-                    vilki.status = 'dead'
-            self.vilki[key] = [vilki for vilki in self.vilki[key] if vilki.status != 'dead']
-            for vilki in vilki_o:
-                if vilki not in update_list:
-                    self.vilki[key].append(vilki)
-        print(self.vilki[key])
+                vilki.update()
+                self.window.pushButton_2.click()
+        #     update_list = []
+        #     for vilki in vilki_o:
+        #         for vilki_wind in self.vilki[key]:
+        #             if vilki.hrefs == vilki_wind.hrefs and vilki.point == vilki_wind.point:
+        #                 print('такой виджет уже есть')
+        #                 vilki_wind.koef_pari = vilki.koef_pari
+        #                 vilki_wind.koef_xbet = vilki.koef_xbet
+        #                 vilki_wind.value = vilki_wind.value
+        #                 vilki_wind.time_life = time.time() - vilki_wind.t0
+        #                 update_list.append(vilki)
+        #     for vilki in self.vilki[key]:
+        #         if vilki not in update_list:
+        #             vilki.status = 'dead'
+        #     self.vilki[key] = [vilki for vilki in self.vilki[key] if vilki.status != 'dead']
+        #     for vilki in vilki_o:
+        #         if vilki not in update_list:
+        #             self.vilki[key].append(vilki)
+        # print(self.vilki[key])
 
 
 class Vilka(SameGame):
@@ -247,11 +258,48 @@ class Vilka(SameGame):
         self.koef_pari = koef_pari
         self.koef_xbet = koef_xbet
         self.value = value
+        self.dead_count = 0
         self.status = 'life'
         self.t0 = time.time()
         self.time_life = 0
 
+    def update(self):
+        url_p, head_p = self.window.parimatch.get_request_value(self.hrefs[0])
+        url_x, head_x = self.window.xbet.get_request_value(self.hrefs[1])
+        url = [url_p, url_x]
+        head = [head_p, head_x]
+        responces = async_request.input_reuqests(url, head)
+        val_pari = self.window.parimatch.get_value(responces[0])
+        val_xbet = self.window.xbet.get_value(responces[1])
+        print(val_pari)
+        print(val_xbet)
+        if val_pari and val_xbet:
+            self.get_value(val_pari, val_xbet, self.vilka_type)
 
+    def get_value(self, val_pari, val_xbet, key):
+        print(key)
+        points_pari = [bet['points'] for bet in val_pari[key]['more']]
+        points_xbet = [bet['points'] for bet in val_xbet[key]['more']]
+        if self.point not in points_pari or self.point not in points_xbet:
+            print(points_pari)
+            print(points_xbet)
+            print(f'{self.point} нету в ответе на запрос')
+            print(self.dead_count)
+            if self.dead_count == 4:
+                self.status = 'dead'
+            else:
+                self.dead_count += 1
+            return
+        self.dead_count = 0
+        self.koef_pari = [float(bet['coef']) for bet in val_pari[key]['more'] if bet['points'] == self.point][0]
+        self.koef_xbet = [bet['coef'] for bet in val_xbet[key]['smaller'] if bet['points'] == self.point][0]
+        vilki = 1 / self.koef_pari + 1 / self.koef_xbet
+        self.value = 100 * (1 - vilki)
+        print(self.koef_pari)
+        print(self.koef_xbet)
+        print(vilki)
+        print(self.value)
+        self.time_life = time.time() - self.t0
 
 
 class ThreadUpdateSameMatches(QThread):
@@ -315,7 +363,10 @@ class ThreadUpdateSameMatches(QThread):
             try:
                 if self.window.same_events:
                     for event in self.window.same_events:
-                        event.get_odds()
+                        if event.status == 'dead':
+                            self.window.same_events.remove(event)
+                        else:
+                            event.get_odds()
             except Exception as ex:
                 print(ex)
                 print(traceback.format_exc())
