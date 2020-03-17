@@ -35,11 +35,9 @@ class ParimatchParser:
         events = sport_basketball[0].select('.subitem')
         events_info = []
         for event in events:
-            print('.')
             name_block = event.select('.td_n')
             champ = champs_dict[event['id'].replace('Item', '')]
             for match in name_block:
-                print('..')
                 if not match.select('a'):
                     return []
                 href = match.select('a')[0]['href']
@@ -92,7 +90,6 @@ class ParimatchParser:
             return {}
         tds = main_info[0].select('td')
         value_main = {}
-        print(len(tds))
         if len(tds) == 3 and tds[2].text == 'Прием ставок приостановлен':
             print('Прием ставок приостановлен')
             return value_main
@@ -101,8 +98,6 @@ class ParimatchParser:
             return value_main
         with open('parimatch.html', 'w', encoding='utf8') as html_file:
              html_file.write(str(main_block))
-        for td in tds:
-            print(td.text)
         t_ot_m = [{'coef': float(tds[5].text), 'points': float(tds[4].text)}]
         t_ot_s = [{'coef': float(tds[6].text), 'points': float(tds[4].text)}]
         if len(tds) == 13:
