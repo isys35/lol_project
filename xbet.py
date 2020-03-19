@@ -17,7 +17,6 @@ class XBetParser:
             'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:73.0) Gecko/20100101 Firefox/73.0'
         }
 
-
     def get_request_events(self):
         return [self.url], [self.main_headers]
 
@@ -117,8 +116,28 @@ class XBetParser:
         return values_main_time
 
 
+class XBetParserTest:
+    def get_events(self):
+        try:
+            with open("xbet_events.json", "r") as file:
+                return json.load(file)
+        except PermissionError:
+            time.sleep(2)
+            with open("xbet_events.json", "r") as file:
+                return json.load(file)
+
+    def get_value(self):
+        try:
+            with open("xbet_value.json", "r") as file:
+                return json.load(file)
+        except PermissionError:
+            time.sleep(2)
+            with open("xbet_value.json", "r") as file:
+                return json.load(file)
+
+
 if __name__ == "__main__":
-    parser = XBetParser()
+    parser = XBetParserTest()
     parser.get_events()
     while True:
-        print(parser.get_events())
+        print(parser.get_value())

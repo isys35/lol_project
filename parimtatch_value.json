@@ -1,0 +1,39 @@
+{
+  "total_total":
+    {"more": [
+      {
+        "coef": 2.8,
+        "points": 162.5
+      }
+    ], "smaller": [
+      {
+        "coef": 2.8,
+        "points": 162.5
+      }
+    ]}
+  ,
+  "individ_total_1":
+    {"more": [
+      {
+        "coef": 2.8,
+        "points": 161.5
+      }
+    ], "smaller": [
+      {
+        "coef": 1.3,
+        "points": 161.5
+      }
+    ]},
+  "individ_total_2":
+    {"more": [
+      {
+        "coef": 2.8,
+        "points": 161.5
+      }
+    ], "smaller": [
+      {
+        "coef": 1.3,
+        "points": 161.5
+      }
+    ]}
+}

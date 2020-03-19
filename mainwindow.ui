@@ -108,6 +108,13 @@
      </widget>
     </item>
     <item>
+     <widget class="QPushButton" name="pushButton">
+      <property name="text">
+       <string>PushButton</string>
+      </property>
+     </widget>
+    </item>
+    <item>
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
        <widget class="QScrollArea" name="scrollArea">
@@ -119,8 +126,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>670</width>
-           <height>671</height>
+           <width>666</width>
+           <height>600</height>
           </rect>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_6">
@@ -141,7 +148,7 @@
      <x>0</x>
      <y>0</y>
      <width>692</width>
-     <height>21</height>
+     <height>26</height>
     </rect>
    </property>
   </widget>

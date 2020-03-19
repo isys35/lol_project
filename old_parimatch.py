@@ -1,5 +1,7 @@
 from bs4 import BeautifulSoup as BS
+import json
 import request as req
+import time
 
 
 class ParimatchParser:
@@ -129,8 +131,28 @@ class ParimatchParser:
             return value_main
 
 
+class ParimatchParserTest:
+    def get_events(self):
+        try:
+            with open("parimtatch_events.json", "r") as file:
+                return json.load(file)
+        except PermissionError:
+            time.sleep(1)
+            with open("parimtatch_events.json", "r") as file:
+                return json.load(file)
+
+    def get_value(self):
+        try:
+            with open("parimtatch_value.json", "r") as file:
+                return json.load(file)
+        except PermissionError:
+            time.sleep(1)
+            with open("parimtatch_value.json", "r") as file:
+                return json.load(file)
+
 
 if __name__ == "__main__":
-    parser = ParimatchParser()
+    parser = ParimatchParserTest()
     events = parser.get_events()
-    print(events)
+    while True:
+        print(parser.get_value())
