@@ -24,8 +24,6 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.same_events = []
         self.pushButton_2.clicked.connect(self.update_vilka_wigets)
         self.pushButton_2.setVisible(False)
-        self.pushButton.clicked.connect(self.clear_widgets)
-        self.pushButton.setVisible(False)
         self.active_widgets = []
 
     def clear_widgets(self):
@@ -277,8 +275,6 @@ class SameGame:
                          koef_pari[i],
                          koef_xbet[i],
                          value[i]) for i in range(len(coincidences))]
-        print('dasdadsad')
-        print(vilki_o)
         if not self.vilki[key]:
             self.vilki[key] = vilki_o
         else:
@@ -291,7 +287,6 @@ class SameGame:
             for new_vilki in vilki_o:
                 if new_vilki.point not in points:
                     self.vilki[key].append(new_vilki)
-            print(self.vilki)
 
 
 class Vilka:

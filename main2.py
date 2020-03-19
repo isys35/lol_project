@@ -24,7 +24,18 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.same_events = []
         self.pushButton_2.clicked.connect(self.update_vilka_wigets)
         self.pushButton_2.setVisible(False)
+        self.pushButton.setVisible(False)
         self.active_widgets = []
+
+    def clear_widgets(self):
+        for widget in self.active_widgets:
+            print(widget.vilka.status)
+            if widget.vilka.status == 'dead':
+                print('удаляем мёртвый виджет')
+                widget.setVisible(False)
+                self.active_widgets.remove(widget)
+                # self.verticalLayout_5.removeWidget(widget)
+                # sip.delete(widget)
 
     def update_vilka_wigets(self):
         print('CLICK')
@@ -45,30 +56,25 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
                         self.verticalLayout_5.addWidget(vilkawidg)
                         self.active_widgets.append(vilkawidg)
             else:
-                print(self.active_widgets)
-                for widget in self.active_widgets:
-                    if widget.vilka.status == 'dead':
-                        print('удаляем мёртвый виджет')
-                        print(widget.vilka)
-                        self.verticalLayout_5.removeWidget(widget)
-                        sip.delete(widget)
-                self.active_widgets = [widget for widget in self.active_widgets if widget.vilka.status != 'dead']
+                self.clear_widgets()
                 for widget in self.active_widgets:
                     widget.update_odds_labels()
                 active_vilki = [widget.vilka for widget in self.active_widgets]
+                print('АКТИВНЫЕ ВИЛКИ')
+                print(active_vilki)
                 for events in self.same_events:
                     for total_vilka in events.vilki['total_total']:
-                        if total_vilka not in active_vilki:
+                        if total_vilka.status == 'life' and total_vilka not in active_vilki:
                             vilkawidg = VilkaWidget(total_vilka)
                             self.verticalLayout_5.addWidget(vilkawidg)
                             self.active_widgets.append(vilkawidg)
                     for individ1_vilka in events.vilki['individ_total_1']:
-                        if individ1_vilka not in active_vilki:
+                        if individ1_vilka.status == 'life' and individ1_vilka not in active_vilki:
                             vilkawidg = VilkaWidget(individ1_vilka)
                             self.verticalLayout_5.addWidget(vilkawidg)
                             self.active_widgets.append(vilkawidg)
                     for individ2_vilka in events.vilki['individ_total_2']:
-                        if individ2_vilka not in active_vilki:
+                        if individ2_vilka.status == 'life' and individ2_vilka not in active_vilki:
                             vilkawidg = VilkaWidget(individ2_vilka)
                             self.verticalLayout_5.addWidget(vilkawidg)
                             self.active_widgets.append(vilkawidg)
@@ -146,17 +152,17 @@ class ThreadParser(QThread):
               f' {same_events}')
         self.window.label_2.setText(f'{len(same_events)}')
         objects_events = [SameGame(
-             [match['href'] for match in events],
-             [match['champ'] for match in events],
-             [[match['command1'], match['command2']] for match in events],
-             self.window
+            [match['href'] for match in events],
+            [match['champ'] for match in events],
+            [[match['command1'], match['command2']] for match in events],
+            self.window
         ) for events in same_events]
         if not self.window.same_events:
             self.window.same_events = objects_events
         else:
             hrefs = [window_event.hrefs for window_event in self.window.same_events]
             for event in objects_events:
-                if event not in hrefs:
+                if event.hrefs not in hrefs:
                     print('[INFO] Добавление новых матчей')
                     self.window.same_events.append(event)
 
@@ -202,14 +208,18 @@ class SameGame:
             self.count_dead = 0
             for key in self.vilki:
                 self.get_value(val_pari, val_xbet, key)
-        if not val_pari or not val_xbet:
-            if self.count_dead == 4:
+        if not val_pari and not val_xbet:
+            if self.count_dead == 2:
                 self.status = 'dead'
+                vilki = [vilka for key, items in self.vilki.items() for vilka in items]
+                for vilka in vilki:
+                    vilka.status = 'dead'
             else:
                 self.count_dead += 1
+        time.sleep(0.5)
         self.window.pushButton_2.click()
 
-    def get_value(self,val_pari,val_xbet,key):
+    def get_value(self, val_pari, val_xbet, key):
         print(f'[INFO] Поиск вилок {self.commands} {key}')
         points_pari = [bet['points'] for bet in val_pari[key]['more']]
         points_xbet = [bet['points'] for bet in val_xbet[key]['smaller']]
@@ -218,6 +228,8 @@ class SameGame:
         coincidences = [p1 for p1 in points_pari for p2 in points_xbet if p1 == p2]
         print(f'[INFO] Совпавшие очки {key} {self.commands} {coincidences}')
         if not coincidences:
+            for vilki in self.vilki[key]:
+                vilki.update([])
             return
         koef_pari = [float(bet['coef']) for bet in val_pari[key]['more']
                      for point in coincidences if bet['points'] == point]
@@ -238,17 +250,23 @@ class SameGame:
         if not self.vilki[key]:
             self.vilki[key] = vilki_o
         else:
-            points = [vilki.point for vilki in self.vilki[key]]
+            points = [vilki.point for vilki in self.vilki[key] if vilki.status == 'life']
             for vilki in self.vilki[key]:
-                vilki.update()
+                if vilki.status == 'life':
+                    vilki.update(vilki_o)
+                else:
+                    self.vilki[key].remove(vilki)
             for new_vilki in vilki_o:
                 if new_vilki.point not in points:
                     self.vilki[key].append(new_vilki)
 
 
-class Vilka(SameGame):
+class Vilka:
     def __init__(self, samegame, vilka_type, point, koef_pari, koef_xbet, value):
-        super().__init__(samegame.hrefs, samegame.champs, samegame.commands, samegame.window)
+        super().__init__()
+        self.champs = samegame.champs
+        self.window = samegame.window
+        self.commands = samegame.commands
         self.vilka_type = vilka_type
         self.point = point
         self.koef_pari = koef_pari
@@ -259,26 +277,21 @@ class Vilka(SameGame):
         self.t0 = time.time()
         self.time_life = 0
 
-    def update(self):
+    def update(self, vilki):
+        print(vilki)
         print(f'[INFO] Обновление вилки {self.point} {self.vilka_type} {self.commands}')
-        url_p, head_p = self.window.parimatch.get_request_value(self.hrefs[0])
-        url_x, head_x = self.window.xbet.get_request_value(self.hrefs[1])
-        url = [url_p, url_x]
-        head = [head_p, head_x]
-        responces = async_request.input_reuqests(url, head)
-        val_pari = self.window.parimatch.get_value(responces[0])
-        val_xbet = self.window.xbet.get_value(responces[1])
-        print(f'[INFO] Данные париматч {self.point} {self.vilka_type} {self.commands} : {val_pari}')
-        print(f'[INFO] Данные 1чставка {self.point} {self.vilka_type} {self.commands} : {val_xbet}')
-        if val_pari and val_xbet:
-            self.get_value(val_pari, val_xbet, self.vilka_type)
-        else:
-            print(f'[INFO] Данных недостаточно')
-            if self.dead_count >= 2:
-                print(f'[INFO] Вилка отсутствует {self.point} {self.vilka_type} {self.commands}')
+        confidence_vilka = [vilka for vilka in vilki if vilka.point == self.point]
+        if not confidence_vilka:
+            print('Вилка не найдена')
+            if self.dead_count >= 1:
                 self.status = 'dead'
             else:
                 self.dead_count += 1
+            return
+        self.koef_pari = confidence_vilka[0].koef_pari
+        self.koef_xbet = confidence_vilka[0].koef_xbet
+        self.value = confidence_vilka[0].value
+        self.time_life = time.time() - self.t0
 
     def get_value(self, val_pari, val_xbet, key):
         print(f'[INFO] Получаем очки для {self.commands} {key}')
@@ -288,7 +301,7 @@ class Vilka(SameGame):
         print(f'[INFO] Очки {key} {self.commands} 1ставка {points_xbet}')
         if self.point not in points_pari or self.point not in points_xbet:
             print(f'[INFO] Очки {self.point} нету ')
-            if self.dead_count >= 2:
+            if self.dead_count >= 1:
                 self.status = 'dead'
                 print(f'[INFO] Вилка отсутствует {self.point} {self.vilka_type} {self.commands}')
             else:
@@ -305,7 +318,7 @@ class Vilka(SameGame):
             self.value = 100 * (1 - vilki)
             print(vilki)
             print(self.value)
-            self.time_life = time.time() - self.t0
+            self.time_life = round(time.time() - self.t0)
 
 
 class ThreadUpdateSameMatches(QThread):
