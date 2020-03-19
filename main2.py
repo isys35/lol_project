@@ -98,7 +98,7 @@ class VilkaWidget(QtWidgets.QWidget, vilkawidget.Ui_Form):
         self.label_10.setText(self.vilka.champs[1])
 
     def update_odds_labels(self):
-        self.label.setText(str(self.vilka.time_life))
+        self.label.setText(str(int(self.vilka.time_life)))
         self.label_2.setText(str(round(self.vilka.value,2)))
         self.label_11.setText(str(self.vilka.point))
         self.label_12.setText(str(self.vilka.point))
@@ -221,8 +221,13 @@ class SameGame:
 
     def get_value(self, val_pari, val_xbet, key):
         print(f'[INFO] Поиск вилок {self.commands} {key}')
-        points_pari = [bet['points'] for bet in val_pari[key]['more']]
-        points_xbet = [bet['points'] for bet in val_xbet[key]['smaller']]
+        try:
+            points_pari = [bet['points'] for bet in val_pari[key]['more']]
+            points_xbet = [bet['points'] for bet in val_xbet[key]['smaller']]
+        except KeyError:
+            for vilki in self.vilki[key]:
+                vilki.update([])
+            return
         print(f'[INFO] Очки {key} {self.commands} париматч {points_pari}')
         print(f'[INFO] Очки {key} {self.commands} 1ставка {points_xbet}')
         coincidences = [p1 for p1 in points_pari for p2 in points_xbet if p1 == p2]
@@ -254,8 +259,6 @@ class SameGame:
             for vilki in self.vilki[key]:
                 if vilki.status == 'life':
                     vilki.update(vilki_o)
-                else:
-                    self.vilki[key].remove(vilki)
             for new_vilki in vilki_o:
                 if new_vilki.point not in points:
                     self.vilki[key].append(new_vilki)
@@ -282,11 +285,7 @@ class Vilka:
         print(f'[INFO] Обновление вилки {self.point} {self.vilka_type} {self.commands}')
         confidence_vilka = [vilka for vilka in vilki if vilka.point == self.point]
         if not confidence_vilka:
-            print('Вилка не найдена')
-            if self.dead_count >= 1:
-                self.status = 'dead'
-            else:
-                self.dead_count += 1
+            self.status = 'dead'
             return
         self.koef_pari = confidence_vilka[0].koef_pari
         self.koef_xbet = confidence_vilka[0].koef_xbet
@@ -301,11 +300,7 @@ class Vilka:
         print(f'[INFO] Очки {key} {self.commands} 1ставка {points_xbet}')
         if self.point not in points_pari or self.point not in points_xbet:
             print(f'[INFO] Очки {self.point} нету ')
-            if self.dead_count >= 1:
-                self.status = 'dead'
-                print(f'[INFO] Вилка отсутствует {self.point} {self.vilka_type} {self.commands}')
-            else:
-                self.dead_count += 1
+            self.status = 'dead'
             return
         else:
             self.dead_count = 0
@@ -318,7 +313,7 @@ class Vilka:
             self.value = 100 * (1 - vilki)
             print(vilki)
             print(self.value)
-            self.time_life = round(time.time() - self.t0)
+            self.time_life = int(time.time() - self.t0)
 
 
 class ThreadUpdateSameMatches(QThread):
