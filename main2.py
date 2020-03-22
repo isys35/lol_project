@@ -9,12 +9,14 @@ import vilkawidget
 import time
 import async_request
 from PyQt5 import sip
-
+import json
+import logging
 
 class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
+        self.load_value_range()
         self.parimatch = ParimatchParser()
         self.xbet = XBetParser()
         self.find_same_matches = ThreadParser(self)
@@ -23,9 +25,28 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.update_same_matches.start()
         self.same_events = []
         self.pushButton_2.clicked.connect(self.update_vilka_wigets)
+        self.pushButton_3.clicked.connect(self.save_value_range)
         self.pushButton_2.setVisible(False)
         self.pushButton.setVisible(False)
+        self.left_border_value = -100
+        self.right_border_value = 100
         self.active_widgets = []
+        logging.basicConfig(filename="sample.log", level=logging.INFO)
+        self.log = logging.getLogger("MainApp")
+
+    def save_value_range(self):
+        self.left_border_value = float(self.lineEdit.text())
+        self.right_border_value = float(self.lineEdit_2.text())
+        with open("settings.txt", "w") as settings:
+            settings.write(str([self.left_border_value, self.right_border_value]))
+
+    def load_value_range(self):
+        with open("settings.txt", "r") as settings:
+            list_range = eval(settings.read())
+        self.left_border_value = list_range[0]
+        self.right_border_value = list_range[1]
+        self.lineEdit.setText(str(self.left_border_value))
+        self.lineEdit_2.setText(str(self.right_border_value))
 
     def clear_widgets(self):
         for widget in self.active_widgets:
