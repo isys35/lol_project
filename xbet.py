@@ -28,6 +28,8 @@ class XBetParser:
             champs_string.append(champ.text.strip())
         events = soup.select('.c-events__item.c-events__item_col')
         events_info = []
+        if not events:
+            return events_info
         for i in range(0, len(events)):
             event_info = {}
             href = events[i].select('.c-events__name')[0]['href']
@@ -46,6 +48,8 @@ class XBetParser:
             else:
                 champ = champs_string.pop(0)
             teams = events[i].select('.c-events__team')
+            if not teams:
+                continue
             command1 = teams[0].text
             command2 = teams[1].text
             total_score = events[i].select('.c-events-scoreboard__cell.c-events-scoreboard__cell--all')
