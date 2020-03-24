@@ -20,7 +20,7 @@ class XBetParser:
     def get_request_events(self):
         return [self.url], [self.main_headers]
 
-    def get_events(self,response):
+    def get_events(self, response):
         soup = BS(response, 'lxml')
         champs = soup.select('.c-events__liga')
         champs_string = []

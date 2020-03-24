@@ -41,8 +41,11 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             settings.write(str([self.left_border_value, self.right_border_value]))
 
     def load_value_range(self):
-        with open("settings.txt", "r") as settings:
-            list_range = eval(settings.read())
+        try:
+            with open("settings.txt", "r") as settings:
+                list_range = eval(settings.read())
+        except FileNotFoundError:
+            list_range = [-40, 40]
         self.left_border_value = list_range[0]
         self.right_border_value = list_range[1]
         self.lineEdit.setText(str(self.left_border_value))
