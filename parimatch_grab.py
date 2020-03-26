@@ -157,6 +157,7 @@ def get_tr_dop_info(trs):
                 if th.text == 'Дополнительные тоталы:':
                     return tr
 
+
 def get_dop_coef(tr_dop):
     coefs = []
     txt = tr_dop.text.replace(' Дополнительные тоталы: ', '')
@@ -170,10 +171,7 @@ def get_dop_coef(tr_dop):
         coefs.append([point,more_coef,smaller_coef])
     return coefs
 
-
-
 # Достать индивидуальные тоталы по четвертям
-
 
 if __name__ == "__main__":
     parser = ParimatchGrab()
