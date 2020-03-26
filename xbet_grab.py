@@ -100,9 +100,4 @@ if __name__ == "__main__":
     urls, headers = parser.get_request_events()
     while True:
         data = requests.get(urls[0], headers = headers[0])
-        events = parser.get_events(data.text)
-        print(events)
-        for event in events:
-            url, header = parser.get_request_value(event['id'])
-            data = requests.get(url, headers=header)
-            parser.get_value(data.text, True)
+        print(data)

@@ -8,17 +8,20 @@ from xbet import XBetParser
 import vilkawidget
 import time
 import async_request
-from PyQt5 import sip
-import json
 import logging
+from xbet_grab import XBetGrab
+from parimatch_grab import ParimatchGrab
+
 
 class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
         self.load_value_range()
-        self.parimatch = ParimatchParser()
-        self.xbet = XBetParser()
+        #self.parimatch = ParimatchParser()
+        #self.xbet = XBetParser()
+        self.parimatch = ParimatchGrab()
+        self.xbet = XBetGrab()
         self.find_same_matches = ThreadParser(self)
         self.find_same_matches.start()
         self.update_same_matches = ThreadUpdateSameMatches(self)
@@ -144,12 +147,8 @@ class ThreadParser(QThread):
 
     def get_events(self):
         self.window.statusBar().showMessage('connect...')
-        url_p,head_p = self.window.parimatch.get_request_events()
-        url_x,head_x = self.window.xbet.get_request_events()
-        url_p.append(url_x[0])
-        head_p.append(head_x[0])
-        async_req_urls = url_p
-        async_req_head = head_p
+        async_req_urls = [ParimatchGrab.URL, XBetGrab.URL]
+        async_req_head = [ParimatchGrab.MAIN_HEADERS, XBetGrab.MAIN_HEADERS]
         responces = async_request.input_reuqests(async_req_urls, async_req_head)
         events_parimatch = self.window.parimatch.get_events(responces[0])
         events_xbet = self.window.xbet.get_events(responces[1])
