@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup as BS
 import requests
 
+
 class ParimatchGrab:
     MAIN_HEADERS = {
         'Host': 'ru.parimatch.com',
@@ -131,14 +132,45 @@ class ParimatchGrab:
             tds = bk.select('td')
             if 'четв.' in tds[1].text:
                 qurter_keys.append(tds[1].text)
-                quarter_values[tds[1].text] = {'more': [{'coef': float(tds[5].text), 'points': float(tds[4].text)}],
-                                              'smaller':[{'coef': float(tds[6].text), 'points': float(tds[4].text)}]}
+                quarter_values[tds[1].text] = {'total_total':{'more': [{'coef': float(tds[5].text), 'points': float(tds[4].text)}],
+                                              'smaller':[{'coef': float(tds[6].text), 'points': float(tds[4].text)}]}}
                 qurter_keys.append(tds[1].text)
             if '\xa0' == tds[1].text:
-                quarter_values[qurter_keys[-1]]['more'].append({'coef': float(tds[4].text), 'points': float(tds[3].text)})
-                quarter_values[qurter_keys[-1]]['smaller'].append({'coef': float(tds[5].text), 'points': float(tds[3].text)})
-        print(quarter_values)
+                quarter_values[qurter_keys[-1]]['total_total']['more'].append({'coef': float(tds[4].text), 'points': float(tds[3].text)})
+                quarter_values[qurter_keys[-1]]['total_total']['smaller'].append({'coef': float(tds[5].text), 'points': float(tds[3].text)})
+        value_main['quarter_value'] = quarter_values
+        tr_dop = get_tr_dop_info(trs)
+        if tr_dop:
+            dop_coefs = get_dop_coef(tr_dop)
+            for coef in dop_coefs:
+                value_main['total_total']['more'].append({'coef': coef[1], 'points': coef[0]})
+                value_main['total_total']['smaller'].append({'coef': coef[2], 'points': coef[0]})
         return value_main
+
+
+def get_tr_dop_info(trs):
+    for tr in trs:
+        btb = tr.select_one('.btb')
+        if btb:
+            th = btb.select_one('th')
+            if th:
+                if th.text == 'Дополнительные тоталы:':
+                    return tr
+
+def get_dop_coef(tr_dop):
+    coefs = []
+    txt = tr_dop.text.replace(' Дополнительные тоталы: ', '')
+    bets = [el for el in txt.split('(') if el]
+    for bet in bets:
+        point = float(bet.split(') ')[0])
+        more_coef_txt = bet.split(') ')[1].split('; ')[0]
+        more_coef = float(more_coef_txt.replace('больше ', ''))
+        smaller_coef_txt = bet.split(') ')[1].split('; ')[1]
+        smaller_coef = float(smaller_coef_txt.replace('меньше ', ''))
+        coefs.append([point,more_coef,smaller_coef])
+    return coefs
+
+
 
 # Достать индивидуальные тоталы по четвертям
 
