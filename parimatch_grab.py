@@ -122,11 +122,25 @@ class ParimatchGrab:
             value_main['total_total'] = {'more': t_ot_m, 'smaller': t_ot_s}
             value_main['individ_total_1'] = {'more': t_it_m_1, 'smaller': t_it_s_1}
             value_main['individ_total_2'] = {'more': t_it_m_2, 'smaller': t_it_s_2}
-        tds = main_block[0].select('td')
-        for td in tds:
-            print(td.attrs)
+        props = main_block[0].select_one('.row1.props')
+        trs = props.select('tr')
+        bks = props.select('.bk')
+        quarter_values = {}
+        qurter_keys = []
+        for bk in bks:
+            tds = bk.select('td')
+            if 'четв.' in tds[1].text:
+                qurter_keys.append(tds[1].text)
+                quarter_values[tds[1].text] = {'more': [{'coef': float(tds[5].text), 'points': float(tds[4].text)}],
+                                              'smaller':[{'coef': float(tds[6].text), 'points': float(tds[4].text)}]}
+                qurter_keys.append(tds[1].text)
+            if '\xa0' == tds[1].text:
+                quarter_values[qurter_keys[-1]]['more'].append({'coef': float(tds[4].text), 'points': float(tds[3].text)})
+                quarter_values[qurter_keys[-1]]['smaller'].append({'coef': float(tds[5].text), 'points': float(tds[3].text)})
+        print(quarter_values)
         return value_main
 
+# Достать индивидуальные тоталы по четвертям
 
 
 if __name__ == "__main__":
