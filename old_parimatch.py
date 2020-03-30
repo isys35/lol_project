@@ -21,7 +21,6 @@ class ParimatchParser:
     def get_request_events(self):
         return [self.url], [self.headers]
 
-
     def get_events(self, response):
         soup = BS(response, 'lxml')
         sport_basketball = soup.select('.sport.basketball')

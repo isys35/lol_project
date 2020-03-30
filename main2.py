@@ -17,6 +17,8 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
+        self.left_border_value = -100
+        self.right_border_value = 100
         self.load_value_range()
         #self.parimatch = ParimatchParser()
         #self.xbet = XBetParser()
@@ -31,11 +33,7 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.pushButton_3.clicked.connect(self.save_value_range)
         self.pushButton_2.setVisible(False)
         self.pushButton.setVisible(False)
-        self.left_border_value = -100
-        self.right_border_value = 100
         self.active_widgets = []
-        logging.basicConfig(filename="sample.log", level=logging.INFO)
-        self.log = logging.getLogger("MainApp")
 
     def save_value_range(self):
         self.left_border_value = float(self.lineEdit.text())
