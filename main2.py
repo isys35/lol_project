@@ -172,6 +172,8 @@ class ThreadParser(QThread):
         print(f'[INFO] Одинаковые события {len(same_events)} штук'
               f' {same_events}')
         self.window.label_2.setText(f'{len(same_events)}')
+        for event in same_events:
+            print(event)
         objects_events = [SameGame(
             [match['href'] for match in events],
             [match['champ'] for match in events],

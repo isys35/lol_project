@@ -9,9 +9,11 @@ class XBetGrab:
             'Referer': 'https://1xstavka.ru/live/Basketball/'
         }
     URL = 'https://1xstavka.ru/LiveFeed/BestGamesExtVZip?sports=3&count=10&antisports=188&partner=51&getEmpty=true&mode=4&country=22'
+    BROKER = '1xставка'
 
     def get_request_events(self):
         return [self.URL], [self.MAIN_HEADERS]
+
 
     def get_events(self, response):
         data = json.loads(response)
@@ -59,7 +61,7 @@ class XBetGrab:
         headers = self.MAIN_HEADERS
         return url, headers
 
-    def get_value(self, response, quarter =False):
+    def get_value(self, response, quarter=False):
         data = json.loads(response)
         if data['Value']['GE']:
             value = {}
